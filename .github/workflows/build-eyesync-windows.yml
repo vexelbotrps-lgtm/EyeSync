@@ -1,0 +1,104 @@
+name: Build and publish Windows EyeSync
+
+on:
+  push:
+    branches:
+      - arena/46de1b67-face-control-website
+      - arena/c1ec5b3e-face-control-website
+    paths:
+      - EyeSync/**
+      - EyeSync-1.5.7.zip
+      - scripts/eyesync_ci.py
+      - release-notes/**
+      - .github/workflows/build-eyesync-windows.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eyesync-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      EYESYNC_RELEASE_DIR: ${{ github.workspace }}/release
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out source and preserved model archive
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: EyeSync/requirements.txt
+
+      - name: Restore the unchanged model binaries
+        run: python scripts/eyesync_ci.py prepare-models
+
+      - name: Install application and build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r EyeSync/requirements.txt "pyinstaller>=6,<7"
+
+      - name: Run the Windows source regression suite
+        working-directory: EyeSync
+        run: python -m unittest discover -s tests -v
+
+      - name: Package and test the Python-source ZIP
+        working-directory: EyeSync
+        run: python make_release.py
+
+      - name: Build, sign if configured, and test EyeSync.exe
+        working-directory: EyeSync
+        run: python build_exe.py
+
+      - name: Verify tested local release artifacts
+        run: python scripts/eyesync_ci.py verify-local release
+
+      - name: Create or update the GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(python -c "import json; print(json.load(open('release/latest.json'))['version'])")
+          tag="v${version}"
+          notes="release-notes/v${version}.md"
+          test -f "$notes"
+          assets=("release/EyeSync.exe" "release/EyeSync-${version}.zip" "release/latest.json" "release/selftest.txt")
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${assets[@]}" --clobber
+            gh release edit "$tag" --title "EyeSync ${version} for Windows" --notes-file "$notes"
+          else
+            gh release create "$tag" "${assets[@]}" \
+              --target "$GITHUB_SHA" \
+              --title "EyeSync ${version} for Windows" \
+              --notes-file "$notes"
+          fi
+
+      - name: Verify the uploaded release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(python -c "import json; print(json.load(open('release/latest.json'))['version'])")
+          python scripts/eyesync_ci.py verify-upload release "v${version}"
+
+      - name: Publish verified download metadata to this branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/eyesync_ci.py update-site release
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add downloads/latest.json
+          if ! git diff --cached --quiet; then
+            version=$(python -c "import json; print(json.load(open('downloads/latest.json'))['version'])")
+            git commit -m "Publish EyeSync ${version} for Windows"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

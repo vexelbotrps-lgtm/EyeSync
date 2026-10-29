@@ -1,0 +1,123 @@
+name: Evaluate EyeSync on public videos
+
+on:
+  push:
+    branches:
+      - arena/c1ec5b3e-face-control-website
+    paths:
+      - .github/workflows/eyesync-public-datasets.yml
+  workflow_dispatch:
+    inputs:
+      speaker:
+        description: GRID speaker (1-34 except 21)
+        required: true
+        default: '1'
+      count:
+        description: Sentences sampled evenly (0 = all 1000)
+        required: true
+        default: '500'
+      cache:
+        description: Commit compact numerical features for the next analysis step
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eyesync-grid-${{ github.ref }}-${{ inputs.speaker || '1' }}
+  cancel-in-progress: false
+
+env:
+  SPEAKER: ${{ inputs.speaker || '1' }}
+  COUNT: ${{ inputs.count || '500' }}
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install native MediaPipe runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgles2 libgl1 libopengl0 libglib2.0-0 libgomp1
+
+      - name: Install the headless vision stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "numpy>=1.24,<3" "mediapipe>=0.10.14,<2" \
+            "pyserial>=3.5,<4" "websockets>=13,<18" "pillow>=10,<13"
+          python -m pip uninstall -y opencv-contrib-python
+          python -m pip install --force-reinstall "opencv-contrib-python-headless>=4.8,<6"
+
+      - name: Restore and verify the unchanged face model
+        run: python scripts/eyesync_ci.py prepare-models
+
+      - name: Preflight the native face landmarker before downloading videos
+        run: |
+          set -o pipefail
+          PYTHONPATH=EyeSync python -c \
+            "import face_engine as fe; mesh=fe.FaceMeshBackend(); print(mesh.kind); mesh.close()" \
+            2>&1 | tee grid-preflight.log
+
+      - name: Test the dataset tools and existing blink/low-light logic
+        run: |
+          PYTHONPATH=EyeSync:EyeSync/tests:EyeSync/tools \
+            python -m unittest discover -s EyeSync/tests -p 'test_dataset_tools.py' -v
+          cd EyeSync
+          PYTHONPATH=tests python -m unittest test_eyesync.BlinkTests test_eyesync.LowLightTests -v
+
+      - name: Download, verify and featurise public GRID videos
+        run: |
+          set -o pipefail
+          python EyeSync/tools/grid_dataset.py \
+            --speaker "$SPEAKER" \
+            --count "$COUNT" \
+            --output "experiments/grid/features2/s${SPEAKER}.npz" 2>&1 | tee grid-run.log
+
+      - name: Preserve a small failure diagnostic
+        if: failure()
+        run: |
+          mkdir -p experiments/grid
+          log_file=grid-run.log
+          if [ ! -f "$log_file" ]; then log_file=grid-preflight.log; fi
+          if [ ! -f "$log_file" ]; then echo "A setup step failed before diagnostics were written." > "$log_file"; fi
+          cp "$log_file" experiments/grid/s${SPEAKER}-failure.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/grid/*failure.log
+          git commit -m "Preserve GRID s${SPEAKER} failure diagnostic [dataset]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Replay EyeSync on the extracted numbers
+        run: |
+          python EyeSync/tools/dataset_report.py \
+            "experiments/grid/features2/s${SPEAKER}.npz" \
+            --events --output "experiments/grid/s${SPEAKER}-report.json"
+
+      - name: Cache compact numbers for the next training/evaluation step
+        if: ${{ inputs.cache || github.event_name == 'push' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/grid
+          git commit -m "Cache GRID s${SPEAKER} numerical features [dataset]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Upload the numerical report
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.cache }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eyesync-grid-s${{ inputs.speaker }}
+          path: experiments/grid
+          retention-days: 14

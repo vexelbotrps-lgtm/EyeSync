@@ -1,0 +1,70 @@
+{
+  "hold_s": 0.65,
+  "note": "extended real closures test sensitivity, not intent",
+  "candidates": [
+    {
+      "blink_min_s": 0.6,
+      "tested": 482,
+      "passed": 482,
+      "recall": 1.0,
+      "speakers": [
+        {
+          "speaker": "s1",
+          "tested": 80,
+          "passed": 80,
+          "recall": 1.0,
+          "misses": []
+        },
+        {
+          "speaker": "s2",
+          "tested": 80,
+          "passed": 80,
+          "recall": 1.0,
+          "misses": []
+        },
+        {
+          "speaker": "s3",
+          "tested": 13,
+          "passed": 13,
+          "recall": 1.0,
+          "misses": []
+        },
+        {
+          "speaker": "s4",
+          "tested": 50,
+          "passed": 50,
+          "recall": 1.0,
+          "misses": []
+        },
+        {
+          "speaker": "s5",
+          "tested": 80,
+          "passed": 80,
+          "recall": 1.0,
+          "misses": []
+        },
+        {
+          "speaker": "s6",
+          "tested": 80,
+          "passed": 80,
+          "recall": 1.0,
+          "misses": []
+        },
+        {
+          "speaker": "s7",
+          "tested": 80,
+          "passed": 80,
+          "recall": 1.0,
+          "misses": []
+        },
+        {
+          "speaker": "s8",
+          "tested": 19,
+          "passed": 19,
+          "recall": 1.0,
+          "misses": []
+        }
+      ]
+    }
+  ]
+}

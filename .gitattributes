@@ -1,0 +1,11 @@
+*.py text eol=lf
+*.pyw text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.ino text eol=lf
+*.bat text eol=crlf
+
+*.wav binary
+*.zip binary
+*.task binary
+*.bin binary

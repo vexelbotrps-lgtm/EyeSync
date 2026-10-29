@@ -1,0 +1,176 @@
+{
+  "split": "development speakers 1-8 only; speakers 9-16 untouched",
+  "thresholds": [
+    {
+      "blink_min_s": 0.3,
+      "minutes": 98.81399779133498,
+      "clicks": 150,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 109,
+        "s2": 31,
+        "s3": 1,
+        "s4": 0,
+        "s5": 2,
+        "s6": 3,
+        "s7": 4,
+        "s8": 0
+      },
+      "clicks_per_minute": 1.5180035556981941
+    },
+    {
+      "blink_min_s": 0.35,
+      "minutes": 98.81399779133498,
+      "clicks": 123,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 95,
+        "s2": 22,
+        "s3": 1,
+        "s4": 0,
+        "s5": 1,
+        "s6": 3,
+        "s7": 1,
+        "s8": 0
+      },
+      "clicks_per_minute": 1.244762915672519
+    },
+    {
+      "blink_min_s": 0.4,
+      "minutes": 98.81399779133498,
+      "clicks": 75,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 62,
+        "s2": 11,
+        "s3": 0,
+        "s4": 0,
+        "s5": 0,
+        "s6": 2,
+        "s7": 0,
+        "s8": 0
+      },
+      "clicks_per_minute": 0.7590017778490971
+    },
+    {
+      "blink_min_s": 0.45,
+      "minutes": 98.81399779133498,
+      "clicks": 47,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 42,
+        "s2": 5,
+        "s3": 0,
+        "s4": 0,
+        "s5": 0,
+        "s6": 0,
+        "s7": 0,
+        "s8": 0
+      },
+      "clicks_per_minute": 0.47564111411876747
+    },
+    {
+      "blink_min_s": 0.5,
+      "minutes": 98.81399779133498,
+      "clicks": 34,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 32,
+        "s2": 2,
+        "s3": 0,
+        "s4": 0,
+        "s5": 0,
+        "s6": 0,
+        "s7": 0,
+        "s8": 0
+      },
+      "clicks_per_minute": 0.3440808059582573
+    },
+    {
+      "blink_min_s": 0.55,
+      "minutes": 98.81399779133498,
+      "clicks": 25,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 24,
+        "s2": 1,
+        "s3": 0,
+        "s4": 0,
+        "s5": 0,
+        "s6": 0,
+        "s7": 0,
+        "s8": 0
+      },
+      "clicks_per_minute": 0.25300059261636565
+    },
+    {
+      "blink_min_s": 0.6,
+      "minutes": 98.81399779133498,
+      "clicks": 17,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 17,
+        "s2": 0,
+        "s3": 0,
+        "s4": 0,
+        "s5": 0,
+        "s6": 0,
+        "s7": 0,
+        "s8": 0
+      },
+      "clicks_per_minute": 0.17204040297912865
+    },
+    {
+      "blink_min_s": 0.65,
+      "minutes": 98.81399779133498,
+      "clicks": 13,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 13,
+        "s2": 0,
+        "s3": 0,
+        "s4": 0,
+        "s5": 0,
+        "s6": 0,
+        "s7": 0,
+        "s8": 0
+      },
+      "clicks_per_minute": 0.13156030816051015
+    },
+    {
+      "blink_min_s": 0.7,
+      "minutes": 98.81399779133498,
+      "clicks": 9,
+      "right": 0,
+      "gestures": 0,
+      "notches": 0,
+      "per_speaker": {
+        "s1": 9,
+        "s2": 0,
+        "s3": 0,
+        "s4": 0,
+        "s5": 0,
+        "s6": 0,
+        "s7": 0,
+        "s8": 0
+      },
+      "clicks_per_minute": 0.09108021334189165
+    }
+  ]
+}

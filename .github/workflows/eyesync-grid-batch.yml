@@ -1,0 +1,139 @@
+name: Build speaker-disjoint GRID evaluation set
+
+on:
+  push:
+    branches:
+      - arena/c1ec5b3e-face-control-website
+    paths:
+      - .github/workflows/eyesync-grid-batch.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: eyesync-grid-batch-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        speaker: [9, 10, 11, 12, 13, 14, 15, 16]
+    env:
+      SPEAKER: ${{ matrix.speaker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install native MediaPipe runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgles2 libgl1 libopengl0 libglib2.0-0 libgomp1
+
+      - name: Install the headless vision stack
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "numpy>=1.24,<3" "mediapipe>=0.10.14,<2" \
+            "pyserial>=3.5,<4" "websockets>=13,<18" "pillow>=10,<13"
+          python -m pip uninstall -y opencv-contrib-python
+          python -m pip install --force-reinstall "opencv-contrib-python-headless>=4.8,<6"
+
+      - name: Restore the face model and preflight native vision
+        run: |
+          python scripts/eyesync_ci.py prepare-models
+          PYTHONPATH=EyeSync python -c \
+            "import face_engine as fe; mesh=fe.FaceMeshBackend(); print(mesh.kind); mesh.close()"
+
+      - name: Test dataset utilities
+        run: |
+          PYTHONPATH=EyeSync:EyeSync/tests:EyeSync/tools \
+            python -m unittest discover -s EyeSync/tests -p 'test_dataset_tools.py' -v
+
+      - name: Extract 500 sentences sampled across this speaker
+        run: |
+          python EyeSync/tools/grid_dataset.py \
+            --speaker "$SPEAKER" --count 500 \
+            --keep-work "$RUNNER_TEMP/grid-s${SPEAKER}" \
+            --output "experiments/grid/features2/s${SPEAKER}.npz"
+
+      - name: Replay EyeSync and make a small public review sheet
+        run: |
+          python EyeSync/tools/dataset_report.py \
+            "experiments/grid/features2/s${SPEAKER}.npz" \
+            --events --output "experiments/grid/s${SPEAKER}-report.json"
+          python EyeSync/tools/event_crops.py \
+            "experiments/grid/features2/s${SPEAKER}.npz" \
+            "experiments/grid/s${SPEAKER}-report.json" \
+            "$RUNNER_TEMP/grid-s${SPEAKER}/videos" \
+            --output-dir experiments/grid/review
+
+      - name: Upload compact numbers and review sheet
+        uses: actions/upload-artifact@v4
+        with:
+          name: grid-s${{ matrix.speaker }}
+          retention-days: 7
+          path: |
+            experiments/grid/features2/s${{ matrix.speaker }}.npz
+            experiments/grid/features2/s${{ matrix.speaker }}.json
+            experiments/grid/s${{ matrix.speaker }}-report.json
+            experiments/grid/review/s${{ matrix.speaker }}-events.jpg
+            experiments/grid/review/s${{ matrix.speaker }}-events.json
+
+  combine:
+    needs: extract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: grid-s*
+          path: experiments/grid
+          merge-multiple: true
+
+      - name: Summarise the eight-speaker baseline
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+          root = Path('experiments/grid')
+          reports = [json.loads(p.read_text())[0] for p in sorted(root.glob('s*-report.json'))]
+          speakers = [{k: v for k, v in r.items() if k != 'events'} |
+                      {'clicks_per_minute': r['clicks'] / max(r['minutes'], 1e-9)} for r in reports]
+          summary = {
+              'dataset': 'GRID', 'license': 'CC BY 4.0',
+              'source': 'https://zenodo.org/records/3625687',
+              'development_speakers': [1, 2, 3, 4, 5, 6, 7, 8],
+              'held_out_speakers': [9, 10, 11, 12, 13, 14, 15, 16],
+              'speakers': speakers,
+              'minutes': sum(r['minutes'] for r in reports),
+              'clicks': sum(r['clicks'] for r in reports),
+              'right': sum(r['right'] for r in reports),
+              'gestures': dict(sum((Counter(r['gestures']) for r in reports), Counter())),
+              'notches': sum(r['notches'] for r in reports),
+          }
+          summary['clicks_per_minute'] = summary['clicks'] / max(summary['minutes'], 1e-9)
+          (root / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          print(json.dumps(summary, indent=2))
+          PY
+
+      - name: Commit the compact evaluation set once
+        run: |
+          rm -f experiments/grid/*failure.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A experiments/grid
+          if ! git diff --cached --quiet; then
+            git commit -m "Add eight-speaker public-video baseline [dataset]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

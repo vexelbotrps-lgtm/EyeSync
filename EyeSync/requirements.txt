@@ -1,0 +1,23 @@
+# EyeSync - head-controlled cursor
+# Install with:  install.bat   (or: python -m pip install -r requirements.txt)
+#
+# Upper bounds stop a future major release from silently breaking an install.
+# Tested with Python 3.15 (and 3.14) and the versions in brackets; every
+# package has ready-made Windows builds for Python 3.12-3.15.
+
+opencv-contrib-python>=4.8,<6   # camera and camera view [5.0.0]
+                                # (the build MediaPipe depends on - don't also
+                                # install opencv-python: both provide cv2)
+mediapipe>=0.10.14,<2           # FaceLandmarker: face mesh, blink + expression scores [1.1.1]
+numpy>=1.24,<3                  # [2.5.4]
+pyserial>=3.5,<4                # USB serial link to the XIAO ESP32-S3 [3.5]
+websockets>=13.0,<18            # WebSocket server, websockets.asyncio API [17.2]
+pillow>=10,<13                  # camera view and icon in the EyeSync window [12.3.0]
+pywhispercpp>=1.5.1,<2          # voice typing: Whisper speech recognition (whisper.cpp) [1.5.1]
+                                # (its model files are in models/, nothing is downloaded)
+sounddevice>=0.4.6,<1           # voice typing: the microphone [0.5.6]
+scikit-learn>=1.3,<2            # calibrated gaze model from desktop project
+joblib>=1.3,<2                 # saved gaze model
+
+# Standalone (software) mouse: built in on Windows via ctypes.
+# On macOS/Linux also install:  pynput>=1.7

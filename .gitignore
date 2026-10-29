@@ -1,0 +1,33 @@
+__pycache__/
+*.py[cod]
+.venv/
+portable_build/
+portable_build_public/
+EyeSync-Portable-Windows*.zip
+EyeSync/control_backend/*.joblib
+EyeSync/control_backend/*profile*.json
+
+# Windows build output and local runtime state
+EyeSync/build/
+EyeSync/dist/
+EyeSync/eyesync_settings.json
+EyeSync/eyesync_api_key.txt
+EyeSync/*.log
+EyeSync/*.log.*
+EyeSync/recordings/
+EyeSync/tests/data/*.npz
+EyeSync/tests/data/*.joblib
+EyeSync-Release/
+release/
+
+# Raw public datasets stay outside Git; only small derived reports/models are
+# candidates for review. Temporary CI feature caches are removed after tuning.
+EyeSync/datasets/
+EyeSync-datasets/
+experiments/**/videos/
+experiments/**/*.zip
+
+# Large model binaries remain in the uploaded source archive. CI restores
+# these generated copies before testing/building instead of committing them twice.
+EyeSync/models/*
+!EyeSync/models/README.md
