@@ -35,7 +35,7 @@ import app_paths
 
 log = logging.getLogger("eyesync")
 
-TITLE = "EyeSync Standalone" if app_paths.STANDALONE else "EyeSync"
+TITLE = "EyeSync"
 PREVIEW_W, PREVIEW_H = 320, 240
 COLORS = {                       # status dot colours (also the window icon)
     "off": "#969696",
@@ -46,8 +46,12 @@ COLORS = {                       # status dot colours (also the window icon)
 
 
 def icon_image(color: str = COLORS["active"]):
-    """A 64x64 eye: white almond outline, coloured iris (PIL image)."""
+    """Load the EyeSync eye-and-pointer app symbol, with a safe fallback."""
     from PIL import Image, ImageDraw
+
+    icon = Path(__file__).resolve().parent / "models" / "eyesync-icon.png"
+    if icon.is_file():
+        return Image.open(icon).convert("RGBA").resize((64, 64), Image.Resampling.LANCZOS)
 
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -119,7 +123,7 @@ class MainWindow:
         box.pack_propagate(False)
         box.pack(**pad)
         self.view = tk.Label(box, bg="#1e1e1e", fg="#bbbbbb",
-                             text="The camera turns on when the EyeSync website is open",
+                             text="Starting the EyeSync camera…",
                              wraplength=self.view_size[0] - 40, font=("Segoe UI", 10))
         self.view.pack(fill="both", expand=True)
 
@@ -308,7 +312,7 @@ class MainWindow:
             if self._photo is not None or not visible:
                 self._photo = None
                 msg = ("Camera view hidden" if not self.camera_var.get() else
-                       "The camera turns on when the EyeSync website is open")
+                       "Starting the EyeSync camera…")
                 self.view.configure(image="", text=msg)
             return
         if frame_id == self._last_frame_id:

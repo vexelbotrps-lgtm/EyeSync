@@ -1,4 +1,4 @@
-"""Install EyeSync Standalone from a bundled ZIP and create a shortcut.
+"""Install EyeSync from a bundled ZIP and create a shortcut.
 
 The downloaded setup executable is built by build_setup.py. It installs only
 this standalone edition and never touches the original EyeSync application.
@@ -13,9 +13,9 @@ import threading
 import zipfile
 from pathlib import Path
 
-VERSION = "1.0.5"
+VERSION = "1.0.6"
 PAYLOAD_NAME = f"EyeSync-Standalone-Windows-v{VERSION}.zip"
-SHORTCUT_NAME = "EyeSync Standalone.lnk"
+SHORTCUT_NAME = "EyeSync.lnk"
 DEFAULT_DEST = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))) / "Programs" / "EyeSync Standalone"
 
 
@@ -44,7 +44,7 @@ def install(payload: Path, dest: Path, shortcut_dir: Path) -> Path:
     with zipfile.ZipFile(payload) as archive:
         for item in archive.infolist():
             parts = Path(item.filename).parts
-            if not parts or parts[0] != "EyeSync-Standalone":
+            if not parts or parts[0] != "EyeSync":
                 raise ValueError("The EyeSync package has an unexpected file path.")
             relative = Path(*parts[1:])
             if not relative.parts:
@@ -60,19 +60,20 @@ def install(payload: Path, dest: Path, shortcut_dir: Path) -> Path:
                     while chunk := source.read(1024 * 1024):
                         output.write(chunk)
     launcher = dest / "Start EyeSync.bat"
-    if not launcher.is_file() or not (dest / "EyeSync-Standalone.exe").is_file():
+    if not launcher.is_file() or not (dest / "EyeSync.exe").is_file():
         raise ValueError("The EyeSync package is incomplete.")
     shortcut_dir.mkdir(parents=True, exist_ok=True)
+    (shortcut_dir / "EyeSync Standalone.lnk").unlink(missing_ok=True)
     shortcut = shortcut_dir / SHORTCUT_NAME
     script = (
         "$s = (New-Object -ComObject WScript.Shell).CreateShortcut($env:ES_LNK); "
         "$s.TargetPath = $env:ES_TARGET; "
         "$s.WorkingDirectory = $env:ES_DIR; "
         "$s.IconLocation = $env:ES_ICON; "
-        "$s.Description = 'Launch EyeSync Standalone'; $s.Save()"
+        "$s.Description = 'Launch EyeSync'; $s.Save()"
     )
     env = {**os.environ, "ES_LNK": str(shortcut), "ES_TARGET": str(launcher),
-           "ES_DIR": str(dest), "ES_ICON": str(dest / "EyeSync-Standalone.exe")}
+           "ES_DIR": str(dest), "ES_ICON": str(dest / "EyeSync.exe")}
     result = subprocess.run(
         ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
         env=env, capture_output=True, text=True,
@@ -84,14 +85,14 @@ def install(payload: Path, dest: Path, shortcut_dir: Path) -> Path:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Install EyeSync Standalone")
+    parser = argparse.ArgumentParser(description="Install EyeSync")
     parser.add_argument("--quiet", action="store_true", help="install without a window")
     parser.add_argument("--dest", type=Path, default=DEFAULT_DEST)
     parser.add_argument("--shortcut-dir", type=Path)
     parser.add_argument("--payload", type=Path, default=bundled_payload())
     args = parser.parse_args(argv)
     if sys.platform != "win32":
-        raise OSError("EyeSync Standalone setup requires Windows.")
+        raise OSError("EyeSync setup requires Windows.")
     shortcut_dir = args.shortcut_dir or desktop_folder()
     if args.quiet:
         shortcut = install(args.payload, args.dest, shortcut_dir)
@@ -102,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
     from tkinter import filedialog, messagebox, ttk
 
     root = tk.Tk()
-    root.title("Install EyeSync Standalone")
+    root.title("Install EyeSync")
     root.geometry("560x340")
     root.resizable(False, False)
     frame = ttk.Frame(root, padding=24)
@@ -110,7 +111,6 @@ def main(argv: list[str] | None = None) -> int:
     ttk.Label(frame, text="Install EyeSync", font=("Segoe UI", 19, "bold")).pack(anchor="w")
     ttk.Label(frame, text="A webcam, microphone, and Windows 10 or 11 are required.",
               wraplength=500).pack(anchor="w", pady=(8, 18))
-    ttk.Label(frame, text=f"Application folder: {args.dest}", wraplength=500).pack(anchor="w")
     folder = tk.StringVar(value=str(shortcut_dir))
     ttk.Label(frame, text="Shortcut folder", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(16, 4))
     row = ttk.Frame(frame)

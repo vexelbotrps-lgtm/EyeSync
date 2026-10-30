@@ -1,7 +1,7 @@
 """Build a Windows ZIP that runs without Python or an installer.
 
 Run from this folder with .venv\\Scripts\\python.exe build_portable.py.
-The output is EyeSync-Standalone-Windows-v1.0.5.zip in this folder.
+The output is EyeSync-Standalone-Windows-v1.0.6.zip in this folder.
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "EyeSync"
-WORK = ROOT / "portable_build_standalone_v105"
+WORK = ROOT / "portable_build_standalone_v106"
 DIST = WORK / "dist"
-PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.5.zip"
+PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.6.zip"
 
 
 def main() -> int:
@@ -25,8 +25,9 @@ def main() -> int:
     from PyInstaller.__main__ import run
 
     options = [
-        str(SOURCE / "standalone_app.py"), "--name", "EyeSync-Standalone", "--onedir",
+        str(SOURCE / "standalone_app.py"), "--name", "EyeSync", "--onedir",
         "--windowed", "--clean", "--noconfirm", "--noupx",
+        "--icon", str(SOURCE / "models" / "eyesync.ico"),
         "--distpath", str(DIST), "--workpath", str(WORK / "work"),
         "--specpath", str(WORK),
         "--paths", str(SOURCE / "control_backend"),
@@ -44,24 +45,24 @@ def main() -> int:
         "--exclude-module", "matplotlib",
     ]
     for name in ("face_landmarker.task", "ggml-base.en-q8_0.bin",
-                 "ggml-silero-v6.2.0.bin"):
+                 "ggml-silero-v6.2.0.bin", "eyesync-icon.png", "eyesync.ico"):
         options += ["--add-data", f"{SOURCE / 'models' / name}{os.pathsep}models"]
     options += ["--add-data", f"{SOURCE / 'control_backend' / 'voice_commands.ps1'}"
                 f"{os.pathsep}control_backend"]
     run(options)
 
-    app = DIST / "EyeSync-Standalone"
+    app = DIST / "EyeSync"
     (app / "Start EyeSync.bat").write_text(
         '@echo off\r\ncd /d "%~dp0"\r\n'
         'if not exist "gaze_model.joblib" (\r\n'
-        '  "EyeSync-Standalone.exe" --calibrate-portable\r\n'
+        '  "EyeSync.exe" --calibrate-portable\r\n'
         '  if errorlevel 1 exit /b 1\r\n'
-        ')\r\nstart "" "%~dp0EyeSync-Standalone.exe" --standalone\r\n', encoding="utf-8")
+        ')\r\nstart "" "%~dp0EyeSync.exe" --standalone\r\n', encoding="utf-8")
     (app / "Calibrate Gaze.bat").write_text(
         '@echo off\r\ncd /d "%~dp0"\r\n'
-        '"EyeSync-Standalone.exe" --calibrate-portable\r\n'
+        '"EyeSync.exe" --calibrate-portable\r\n'
         'if errorlevel 1 exit /b 1\r\n'
-        'start "" "%~dp0EyeSync-Standalone.exe" --standalone\r\n', encoding="utf-8")
+        'start "" "%~dp0EyeSync.exe" --standalone\r\n', encoding="utf-8")
     (app / "README.txt").write_text(
         'EyeSync for Windows 10/11, 64-bit.\n\n'
         'Extract the whole ZIP, then double-click Start EyeSync.bat. '
@@ -75,16 +76,16 @@ def main() -> int:
         'The Command Panel opens an EyeSync on-screen keyboard that can be '
         'moved and resized without administrator permission. Click the text '
         'field you want to use before pressing its keys.\n\n'
-        'This standalone edition uses its own window, process lock and local '
+        'This edition uses its own window, process lock and local '
         'WebSocket ports (8773 and 8774). It does not install or update the '
         'original EyeSync application.\n\n'
-        'Keep the _internal folder beside EyeSync-Standalone.exe. Personal '
+        'Keep the _internal folder beside EyeSync.exe. Personal '
         'settings and the gaze model stay beside the executable.\n', encoding="utf-8")
     with zipfile.ZipFile(PACKAGE, "w", compression=zipfile.ZIP_DEFLATED,
                          compresslevel=6) as archive:
         for path in sorted(app.rglob("*")):
             if path.is_file():
-                archive.write(path, Path("EyeSync-Standalone") / path.relative_to(app))
+                archive.write(path, Path("EyeSync") / path.relative_to(app))
     print(PACKAGE)
     print(f"ZIP size: {PACKAGE.stat().st_size / 1024**2:.1f} MiB")
     return 0

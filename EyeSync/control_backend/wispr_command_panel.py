@@ -26,7 +26,7 @@ class WisprCommandPanel:
         self.keyboard = AccessibleKeyboard(root, lambda message: self.status_text.set(message))
         self._app_icon = self.create_app_icon()
 
-        root.title("EyeSync Standalone Command Panel")
+        root.title("EyeSync Command Panel")
         root.iconphoto(True, self._app_icon)
         root.protocol("WM_DELETE_WINDOW", self.close)
 

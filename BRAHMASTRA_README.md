@@ -26,7 +26,7 @@ button was for the original gaze-jump feature and has been removed.
 
 For a downloadable Windows package, use
 `EyeSync-Setup-v1.0.5.exe` in this folder. Users open it once to install an
-EyeSync Standalone desktop shortcut, then click that shortcut to calibrate on
+EyeSync desktop shortcut, then click that shortcut to calibrate on
 first launch and start the app. No Python installation is needed. The portable
 `EyeSync-Standalone-Windows-v1.0.5.zip` remains available for manual extraction.
 Rebuild with `.venv\Scripts\python.exe build_portable.py`, then

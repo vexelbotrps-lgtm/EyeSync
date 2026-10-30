@@ -311,7 +311,7 @@ def status_of(snap: Snapshot, args) -> tuple[str, str]:
     if calibrating(snap):
         return "active", "Calibrating - follow the guide on the screen"
     if not website_connected(snap, args):
-        return "off", "Off - turns on when the EyeSync website is open"
+        return "off", "Starting the EyeSync camera..."
     if snap.remote_off:
         return "paused", "Mouse control is off on the website"
     if snap.paused:
@@ -3851,7 +3851,7 @@ class Actions:
 
     def show_window(self) -> None:
         desktop.bring_window_to_front(
-            "EyeSync Standalone" if app_paths.STANDALONE else "EyeSync", "TkTopLevel")
+            "EyeSync", "TkTopLevel")
 
     def quit(self) -> None:
         log.info("[control] Quit requested")
@@ -4008,7 +4008,7 @@ def main() -> int:
         # instead, and exit cleanly (code 0) so launchers don't retry.
         log.info("[main] EyeSync is already running - bringing its window to the front")
         desktop.bring_window_to_front(
-            "EyeSync Standalone" if app_paths.STANDALONE else "EyeSync", "TkTopLevel")
+            "EyeSync", "TkTopLevel")
         return 0
     log.info(f"=== EyeSync {VERSION} live session starting ===")
     if not args.always_active:

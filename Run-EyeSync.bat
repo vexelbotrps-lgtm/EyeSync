@@ -13,4 +13,4 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-start "EyeSync Standalone" "%~dp0.venv\Scripts\pythonw.exe" "%~dp0EyeSync\live_inference.py" --always-active --mouse software --stall-timeout 45 --site-origin http://localhost:8000 --site-origin https://vexelbotrps-lgtm.github.io
+start "EyeSync" "%~dp0.venv\Scripts\pythonw.exe" "%~dp0EyeSync\live_inference.py" --always-active --mouse software --stall-timeout 45 --site-origin http://localhost:8000 --site-origin https://vexelbotrps-lgtm.github.io
