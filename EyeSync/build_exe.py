@@ -148,7 +148,7 @@ def pyinstaller_args(ver: str) -> list[str]:
     ]
     for name in ("README.md", "WEBSITE.md", "THIRD_PARTY_NOTICES.md", "requirements.txt"):
         _add_data(args, HERE / name, ".")
-    for name in ("face_landmarker.task", "ggml-base.en-q8_0.bin", "ggml-silero-v6.2.0.bin"):
+    for name in ("face_landmarker.task", "ggml-small.en-q8_0.bin", "ggml-silero-v6.2.0.bin"):
         _add_data(args, HERE / "models" / name, "models")
     _add_data(args, HERE / "firmware" / "xiao_esp32s3_mouse" / "xiao_esp32s3_mouse.ino",
               "firmware/xiao_esp32s3_mouse")

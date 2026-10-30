@@ -15,7 +15,7 @@ TOP_LEVEL = {
     "build_developer_source.py",
 }
 MODELS = (
-    "face_landmarker.task", "ggml-base.en-q8_0.bin", "ggml-silero-v6.2.0.bin",
+    "face_landmarker.task", "ggml-small.en-q8_0.bin", "ggml-silero-v6.2.0.bin",
     "eyesync-icon.png", "eyesync.ico",
 )
 INSTRUCTIONS = """EyeSync developer source, version 1.0.6

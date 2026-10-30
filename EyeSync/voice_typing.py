@@ -13,7 +13,7 @@ How it works
     Silero voice detection (SileroVad) every 32 ms - so a fan, typing or a
     microphone's noise bursts never count as talking.
   * Recognizer: each phrase is turned into text by Whisper (OpenAI's speech
-    model, the English "base" size) running in whisper.cpp - offline,
+    model, the high-accuracy English "small" size) running in whisper.cpp - offline,
     nothing leaves the PC. Silero voice detection inside it drops phrases
     that hold no speech: without it, Whisper "hears" words in noise
     ("Thank you.", "(buzzing)"). ~1-1.5 s per phrase on a 4-core laptop,
@@ -56,7 +56,7 @@ log = logging.getLogger("eyesync")
 
 RATE = 16000                         # Whisper's sample rate
 MODELS_DIR = app_paths.APP_DIR / "models"
-MODEL_FILE = "ggml-base.en-q8_0.bin"     # Whisper base.en (8-bit): see Recognizer
+MODEL_FILE = "ggml-small.en-q8_0.bin"  # high-accuracy English Whisper; see Recognizer
 VAD_FILE = "ggml-silero-v6.2.0.bin"      # Silero voice detection (noise -> no text)
 END_PAUSE_S = 0.7        # a pause this long ends a phrase (then it is typed)
 MAX_PHRASE_S = 20.0      # longer without a pause: cut at the quietest moment
@@ -255,9 +255,8 @@ def _whisper_log(level, text) -> None:
 
 class Recognizer:
     """
-    One phrase of audio -> text. Whisper base.en in whisper.cpp, loaded when
-    voice typing starts (~0.2 s) and freed when it stops (close()): it takes
-    ~170 MB of memory, which EyeSync - always running - shouldn't keep.
+    One phrase of audio -> text. Whisper small.en q8_0 in whisper.cpp,
+    loaded only when voice typing starts and freed when it stops (close()).
 
     Settings measured on real accented speech (EdAcc Indian, Urdu, Sinhalese
     and US English speakers, LibriSpeech; 119 phrases):
@@ -267,8 +266,10 @@ class Recognizer:
       * the encoder sees at least AUDIO_CTX_MIN (~20 s) of its 30 s window:
         less (~10 s) cost a quarter of the accuracy (20.6% -> 15.4% words
         wrong, 1.1 -> 1.6 s a phrase). The full 30 s was no better, only slower.
-      * base.en, not small.en: small.en was barely better (13.6%), lost more
-        phrases, and on a 4-core laptop took longer than the speech itself.
+      * small.en q8_0 replaces base.en for stronger Indian-English accent
+        recognition while remaining responsive on a four-core PC. The much
+        larger large-v3-turbo model was rejected after taking over 90 seconds
+        for the four-phrase end-to-end test on the supported reference PC.
       * Silero voice detection inside (vad): without it, more words wrong.
       * beam search (5 candidate wordings at a time): 2 -> 1 phrase lost,
         15.4% -> 15.2% words wrong, ~0.3 s more per phrase.
@@ -282,7 +283,7 @@ class Recognizer:
         self.model_path, self.vad_path = Path(model), Path(vad)
         # A core fewer than the PC has (cpu_count counts each core twice): with all
         # 4 of a laptop's, the face tracking ran late 3x as often while it worked.
-        self.threads = threads or max(2, min(6, (os.cpu_count() or 4) // 2 - 1))
+        self.threads = threads or max(2, min(6, (os.cpu_count() or 4) - 1))
         self._pw = self._ctx = self._params = None
         self._lock = threading.Lock()
 
@@ -311,6 +312,7 @@ class Recognizer:
             p.single_segment = False
             p.no_context = True              # each phrase on its own (a prompt made it worse)
             p.suppress_blank = True
+            p.suppress_nst = True            # suppress non-speech tokens in noisy rooms
             p.print_progress = p.print_realtime = p.print_timestamps = p.print_special = False
             if self.vad_path.is_file():
                 p.vad = True

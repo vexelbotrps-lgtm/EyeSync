@@ -540,7 +540,7 @@ this PC; nothing is sent unless you send the file yourself.
 | `gaze_engine.py` | Eye gaze: the eye model (adapted from JEOresearch's EyeTracker), the 9-dot eye calibration, gaze jump |
 | `THIRD_PARTY_NOTICES.md` | Licences of code EyeSync adapts (EyeTracker, MIT) |
 | `voice_typing.py` | Voice typing: microphone, cutting speech into phrases, Whisper speech recognition, voice commands, typing |
-| `models/` | The face model, and the speech models: Whisper base.en (`ggml-base.en-q8_0.bin`, MIT licence) and Silero voice detection (`ggml-silero-v6.2.0.bin`, MIT) |
+| `models/` | The face model, and the speech models: Whisper small.en q8_0 (`ggml-small.en-q8_0.bin`, MIT licence) and Silero voice detection (`ggml-silero-v6.2.0.bin`, MIT) |
 | `desktop.py`, `software_mouse.py` | Windows hotkeys, sounds, background priority, cursor control |
 | `site_access.py` | Who may connect (the website, the API key) and the standby that starts EyeSync when the website opens |
 | `main_window.py` | The EyeSync window |

@@ -2395,7 +2395,7 @@ class VoiceTypingTests(unittest.TestCase):
         self.assertNotIn("secret", json.dumps(msg))            # what is said never leaves the PC
 
     def test_speech_is_typed_end_to_end(self):
-        """The test recording through voice typing: two sentences, "new line", "stop listening"."""
+        """The recording types two sentences/newline; only the gesture or button stops it."""
         import wave
         self.assertEqual(vt.available(), "", "voice typing is not completely installed")
         with wave.open(str(PROJECT / "tests" / "data" / "voice_phrases.wav")) as w:
@@ -2413,7 +2413,11 @@ class VoiceTypingTests(unittest.TestCase):
         try:
             voice.start()
             vt.request(state, True, "test")
-            deadline = time.monotonic() + 90
+            deadline = time.monotonic() + 30
+            while len(typist.ops) < 3 and time.monotonic() < deadline:
+                time.sleep(0.05)
+            vt.request(state, False, "test stop button")
+            deadline = time.monotonic() + 10
             while not mic.closed and time.monotonic() < deadline:
                 time.sleep(0.05)
         finally:
@@ -2431,7 +2435,7 @@ class VoiceTypingTests(unittest.TestCase):
         wrong = sum(a != b for a, b in zip(got, want.split())) + abs(len(got) - len(want.split()))
         self.assertLessEqual(wrong, 2, f"recognised {first!r} {second!r}")
         self.assertEqual(state.read().voice, "")
-        self.assertTrue(any('stop listening' in m for m in messages), messages)
+        self.assertTrue(any('test stop button' in m for m in messages), messages)
         logged = " ".join(messages).lower()
         self.assertNotIn("friday", logged)                     # the words never go in the log
         self.assertNotIn("yesterday", logged)

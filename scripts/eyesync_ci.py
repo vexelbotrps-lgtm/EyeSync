@@ -12,15 +12,23 @@ import json
 import os
 import re
 import subprocess
-import zipfile
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MODELS = ("face_landmarker.task", "ggml-base.en-q8_0.bin", "ggml-silero-v6.2.0.bin")
+MODELS = ("face_landmarker.task", "ggml-small.en-q8_0.bin", "ggml-silero-v6.2.0.bin")
 MODEL_SHA256 = {
     "face_landmarker.task": "64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff",
-    "ggml-base.en-q8_0.bin": "a4d4a0768075e13cfd7e19df3ae2dbc4a68d37d36a7dad45e8410c9a34f8c87e",
+    "ggml-small.en-q8_0.bin": "67a179f608ea6114bd3fdb9060e762b588a3fb3bd00c4387971be4d177958067",
     "ggml-silero-v6.2.0.bin": "2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987",
+}
+MODEL_URLS = {
+    "face_landmarker.task":
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+    "ggml-small.en-q8_0.bin":
+        "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en-q8_0.bin",
+    "ggml-silero-v6.2.0.bin":
+        "https://huggingface.co/ggml-org/whisper-vad/resolve/main/ggml-silero-v6.2.0.bin",
 }
 
 
@@ -33,19 +41,23 @@ def sha256(path: Path) -> str:
 
 
 def prepare_models() -> None:
-    """Restore unchanged model bytes without committing a second 86 MB copy."""
-    archive = ROOT / "EyeSync-1.5.7.zip"
+    """Fetch pinned runtime models from their official repositories."""
     destination = ROOT / "EyeSync" / "models"
     destination.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(archive) as source:
-        for name in MODELS:
-            member = f"EyeSync/models/{name}"
-            data = source.read(member)
-            if len(data) < 100_000 or hashlib.sha256(data).hexdigest() != MODEL_SHA256[name]:
-                raise RuntimeError(f"model size or SHA-256 changed in {archive}: {member}")
-            target = destination / name
-            target.write_bytes(data)
-            print(f"restored {target.relative_to(ROOT)} ({len(data):,} bytes)")
+    for name, url in MODEL_URLS.items():
+        target = destination / name
+        if target.is_file() and sha256(target) == MODEL_SHA256[name]:
+            print(f"verified {target.relative_to(ROOT)} ({target.stat().st_size:,} bytes)")
+            continue
+        partial = target.with_suffix(target.suffix + ".part")
+        with urllib.request.urlopen(url) as source, partial.open("wb") as output:
+            for block in iter(lambda: source.read(4 << 20), b""):
+                output.write(block)
+        if sha256(partial) != MODEL_SHA256[name]:
+            partial.unlink(missing_ok=True)
+            raise RuntimeError(f"downloaded model checksum is wrong: {name}")
+        partial.replace(target)
+        print(f"downloaded {target.relative_to(ROOT)} ({target.stat().st_size:,} bytes)")
 
 
 def local_info(release_dir: Path) -> tuple[dict, Path]:

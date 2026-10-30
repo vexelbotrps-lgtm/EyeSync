@@ -41,7 +41,7 @@ INCLUDE = [
     "live_inference.py", "launcher.py", "app_paths.py", "installer.py", "eyesync_app.py",
     "main_window.py", "face_engine.py", "gaze_engine.py", "desktop.py", "software_mouse.py",
     "site_access.py", "autostart.py", "voice_typing.py", "make_release.py",
-    "models/face_landmarker.task", "models/ggml-base.en-q8_0.bin", "models/ggml-silero-v6.2.0.bin",
+    "models/face_landmarker.task", "models/ggml-small.en-q8_0.bin", "models/ggml-silero-v6.2.0.bin",
     "firmware/xiao_esp32s3_mouse/xiao_esp32s3_mouse.ino",
     "tests/test_eyesync.py", "tests/data/voice_phrases.wav",
 ]

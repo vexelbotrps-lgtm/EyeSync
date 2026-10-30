@@ -44,7 +44,7 @@ def main() -> int:
         "--collect-all", "sounddevice",
         "--exclude-module", "matplotlib",
     ]
-    for name in ("face_landmarker.task", "ggml-base.en-q8_0.bin",
+    for name in ("face_landmarker.task", "ggml-small.en-q8_0.bin",
                  "ggml-silero-v6.2.0.bin", "eyesync-icon.png", "eyesync.ico"):
         options += ["--add-data", f"{SOURCE / 'models' / name}{os.pathsep}models"]
     options += ["--add-data", f"{SOURCE / 'control_backend' / 'voice_commands.ps1'}"
