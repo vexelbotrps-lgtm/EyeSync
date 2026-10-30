@@ -2198,31 +2198,10 @@ class VoiceTypingTests(unittest.TestCase):
         c.plan("Please send the report.")
         self.assertEqual(c.plan("quick brown fox."), [("text", " Quick brown fox.")])
 
-    def test_voice_commands(self):
-        c = vt.Composer()
-        self.assertEqual(c.plan("Delete that."), [])                  # nothing typed yet
-        c.plan("Dear John,")
-        self.assertEqual(c.plan("New line."), [("key", "newline")])
-        self.assertEqual(c.plan("Thanks for the update."), [("text", "Thanks for the update.")])
-        self.assertEqual(c.plan("Question mark."), [("back", 1), ("text", "?")])  # replaces the "."
-        self.assertEqual(c.plan("Delete that."), [("back", 1)])
-        self.assertEqual(c.plan("Scratch that"), [("back", len("Thanks for the update"))])
-        self.assertEqual(c.plan("Thanks."), [("text", "Thanks.")])
-        self.assertEqual(c.plan('"Kama"'), [("back", 1), ("text", ",")])    # a misheard "comma"
-        self.assertEqual(c.plan("New paragraph"), [("key", "newline"), ("key", "newline")])
-        self.assertEqual(c.plan("Press enter."), [("key", "enter")])
-        self.assertEqual(c.plan("Tab."), [("key", "tab")])
-        self.assertEqual(c.plan("Backspace"), [("key", "backspace")])
-        self.assertEqual(c.plan("space"), [("text", " ")])
-        self.assertEqual(c.plan("Stop listening."), [("stop", "")])
-        # At the start or end of a longer phrase they still count...
-        c = vt.Composer()
-        self.assertEqual(c.plan("Best wishes, new line."), [("text", "Best wishes,"), ("key", "newline")])
-        self.assertEqual(c.plan("New line. See you soon."), [("key", "newline"), ("text", "See you soon.")])
-        self.assertEqual(c.plan("That's all, stop listening."), [("text", " That's all"), ("stop", "")])
-        # ... but not in the middle of a sentence.
-        self.assertEqual(vt.Composer().plan("We launched a new line of products."),
-                         [("text", "We launched a new line of products.")])
+    def test_voice_editing_phrases_are_ordinary_dictation(self):
+        for phrase in ("Delete that.", "New line.", "Question mark.", "Stop listening."):
+            with self.subTest(phrase=phrase):
+                self.assertEqual(vt.Composer().plan(phrase), [("text", phrase)])
 
     def test_sound_labels_and_video_credits_are_not_typed(self):
         for raw in ("[BLANK_AUDIO]", "(buzzing)", "[MUSIC PLAYING]", "*laughs*", "♪ ♪", " ...",

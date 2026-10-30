@@ -268,25 +268,13 @@ again").
    the same sentence.
 4. **To stop**, do any of these:
    - close your eyes for 2.5 seconds again (two falling tones);
-   - say **"stop listening"**;
    - press **Stop** on the bar;
    - just stop talking: it stops by itself after 8 seconds of silence, and
      the bar counts down the last 3.
 
-Say these on their own, with a short pause before and after:
-
-| Say | Does |
-|---|---|
-| **"new line"** | Starts a new line (Shift+Enter, so a chat box doesn't send the message) |
-| **"new paragraph"** | Two new lines |
-| **"press enter"** | Presses Enter, for example to send a message or search |
-| **"delete that"** (or "scratch that") | Deletes the last thing it typed; say it again for the one before |
-| **"backspace"**, **"tab"**, **"space"** | Presses that key |
-| **"comma"**, **"period"**, **"question mark"**, **"exclamation mark"**, **"colon"** | Types that mark, replacing the one Whisper put there |
-| **"stop listening"** | Ends voice typing |
-
-"New line" and "stop listening" also work at the end of a sentence ("…see
-you soon, new line").
+Voice typing treats every recognised phrase as ordinary dictated text. It has
+no spoken editing commands; use the eye gesture or the bar's **Stop** button
+to end it.
 
 - **Private:** the microphone is on only while voice typing is, and you
   always hear and see when it is. What you say is turned into text on

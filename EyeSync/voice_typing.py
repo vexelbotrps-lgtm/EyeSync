@@ -20,9 +20,9 @@ How it works
     on 3 threads (a core stays free for the face tracking) that don't hold
     up the rest of EyeSync (whisper.cpp releases Python's GIL). Its
     settings were chosen on real accented speech (see Recognizer).
-  * Composer joins the phrases like normal writing (spaces, a sentence
-    carried on over a pause isn't capitalised) and turns voice commands
-    (COMMANDS: "new line", "delete that"...) into keys.
+  * Composer joins the phrases like normal writing (spaces, and a sentence
+    carried on over a pause isn't capitalised). Every recognised phrase is
+    dictated text; voice typing has no spoken editing commands.
   * Typist types it as keyboard input (SendInput with Unicode characters, so
     any keyboard layout works) into the window in front.
   * Your words are never written to the log - only how many characters
@@ -350,32 +350,6 @@ class Recognizer:
 # Text -> what to type
 # --------------------------------------------------------------------------- #
 
-# Voice commands, said as a phrase of their own (a pause before and after).
-# Whisper writes them in many ways ("New line.", "newline") - compared after
-# normalise(); one-word ones it sometimes mishears, hence the extra spellings.
-STOP_PHRASES = {"stop listening", "stop dictation", "stop dictating", "stop voice typing",
-                "stop typing", "stop voice"}
-UNDO_PHRASES = {"delete that", "scratch that", "undo that", "erase that", "remove that",
-                "delete last"}
-KEY_PHRASES = {
-    "new line": "newline", "newline": "newline", "next line": "newline", "new life": "newline",
-    "new paragraph": "paragraph", "next paragraph": "paragraph",
-    "press enter": "enter", "hit enter": "enter", "enter": "enter", "press return": "enter",
-    "tab": "tab", "press tab": "tab", "tab key": "tab",
-    "backspace": "backspace", "back space": "backspace", "press backspace": "backspace",
-    "space": "space", "spacebar": "space", "space bar": "space", "press space": "space",
-}
-PUNCTUATION_PHRASES = {
-    "comma": ",", "coma": ",", "kama": ",", "period": ".", "full stop": ".", "dot": ".",
-    "question mark": "?", "exclamation mark": "!", "exclamation point": "!",
-    "colon": ":", "semicolon": ";", "semi colon": ";",
-}
-COMMANDS = sorted(STOP_PHRASES | UNDO_PHRASES | set(KEY_PHRASES) | set(PUNCTUATION_PHRASES))
-# Said at the start or end of a longer phrase, these still count:
-_EDGE_KEYS = re.compile(r"^(?:new (line|paragraph))\b[\s,.:;!?]*|\s*\bnew (line|paragraph)[.!?]*$",
-                        re.IGNORECASE)
-_EDGE_STOP = re.compile(r"[\s,.:;!?]*\bstop (?:listening|dictation|dictating|voice typing)[.!?]*$",
-                        re.IGNORECASE)
 # Whisper's sound labels - "[BLANK_AUDIO]", "(buzzing)", "*laughs*", "♪" - aren't speech.
 _ANNOTATION = re.compile(r"\[[^\]]*\]|\*[^*]{0,40}\*|\([^()]{0,40}\)|[♪♫]+")
 # ... nor the subtitle credits it learned from videos.
@@ -418,13 +392,9 @@ def clean(text: str) -> str:
 
 class Composer:
     """
-    Turns recognised phrases into what to type, as operations:
-        ("text", "..."), ("key", "enter" | "newline" | "tab" | "backspace"),
-        ("back", n) = n backspaces, ("stop", "") = end voice typing.
-    It remembers what it typed (``typed``, newest last) so phrases join up
-    and "delete that" removes exactly the last one. reset() when the text
-    cursor may have moved (another window, a click): then nothing is known
-    about the text around it.
+    Turns recognised phrases into ordinary dictated text. It remembers what
+    it typed (``typed``, newest last) so phrases join naturally. reset() when
+    the text cursor may have moved (another window, a click).
     """
 
     def __init__(self):
@@ -445,64 +415,7 @@ class Composer:
         text = clean(raw)
         if not text:
             return []
-        norm = normalise(text)
-        if norm in STOP_PHRASES:
-            return [("stop", "")]
-        if norm in UNDO_PHRASES:
-            return [("back", len(self.typed.pop()))] if self.typed else []
-        if norm in KEY_PHRASES:
-            return self._key(KEY_PHRASES[norm])
-        if norm in PUNCTUATION_PHRASES:
-            return self._punctuation(PUNCTUATION_PHRASES[norm])
-        ops: list[tuple[str, object]] = []
-        stop = _EDGE_STOP.search(text)
-        if stop and stop.start() > 0:
-            text = text[:stop.start()]
-        keys_after = []
-        while (m := _EDGE_KEYS.search(text)) is not None and text:
-            word = (m.group(1) or m.group(2)).lower()
-            key = "newline" if word == "line" else "paragraph"
-            if m.start() == 0:                       # "New line. Dear John"
-                ops += self._key(key)
-            else:                                    # "... best wishes, new line"
-                keys_after.insert(0, key)
-            text = (text[:m.start()] + text[m.end():]).strip()
-        if text and re.search(r"\w", text):
-            ops += self._text(text)
-        for key in keys_after:
-            ops += self._key(key)
-        if stop:
-            ops.append(("stop", ""))
-        return ops
-
-    def _key(self, key: str) -> list[tuple[str, object]]:
-        if key == "space":
-            self._remember(" ")
-            return [("text", " ")]
-        if key == "backspace":
-            if self.typed:
-                self.typed[-1] = self.typed[-1][:-1]
-                if not self.typed[-1]:
-                    self.typed.pop()
-            return [("key", "backspace")]
-        if key == "paragraph":
-            self._remember("\n\n")
-            return [("key", "newline"), ("key", "newline")]
-        self._remember("\t" if key == "tab" else "\n")
-        return [("key", key)]
-
-    def _punctuation(self, mark: str) -> list[tuple[str, object]]:
-        ops: list[tuple[str, object]] = []
-        last = self.last
-        if last and last[-1] in ".,!?:;":
-            # Whisper already ended the phrase with its own mark: replace it.
-            ops.append(("back", 1))
-            self.typed[-1] = last[:-1]
-            if not self.typed[-1]:
-                self.typed.pop()
-        self._remember(mark)
-        ops.append(("text", mark))
-        return ops
+        return self._text(text)
 
     def _text(self, text: str) -> list[tuple[str, object]]:
         ops: list[tuple[str, object]] = []
@@ -940,7 +853,7 @@ class VoiceTyping:
                                   voice_left=0.0)
 
     def _phrase(self, audio: np.ndarray) -> bool:
-        """Recognise and type one phrase. True if it said to stop."""
+        """Recognise and type one phrase."""
         self.state.update(voice="working", voice_level=0.0)
         t0 = time.monotonic()
         text = self.recognizer(audio)
@@ -955,10 +868,7 @@ class VoiceTyping:
         if window != last_window or clicks != last_clicks or t0 - last_time > CONTEXT_S:
             self.composer.reset()                # the text cursor may be somewhere else now
         ops = self.composer.plan(text)
-        # A spoken stop phrase does not stop voice typing; use the eye gesture
-        # or the visible bar's Stop button.
         stop = False
-        ops = [op for op in ops if op[0] != "stop"]
         typed = "".join(str(a) for o, a in ops if o == "text")
         if ops and self.tracker is not None:
             window = self.tracker.target()       # EyeSync's window in front: the one before it
