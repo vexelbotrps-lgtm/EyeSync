@@ -13,7 +13,7 @@ import threading
 import zipfile
 from pathlib import Path
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 PAYLOAD_NAME = f"EyeSync-Standalone-Windows-v{VERSION}.zip"
 SHORTCUT_NAME = "EyeSync.lnk"
 DEFAULT_DEST = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))) / "Programs" / "EyeSync Standalone"

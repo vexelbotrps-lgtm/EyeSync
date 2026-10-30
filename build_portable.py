@@ -1,7 +1,7 @@
 """Build a Windows ZIP that runs without Python or an installer.
 
 Run from this folder with .venv\\Scripts\\python.exe build_portable.py.
-The output is EyeSync-Standalone-Windows-v1.0.8.zip in this folder.
+The output is EyeSync-Standalone-Windows-v1.0.9.zip in this folder.
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "EyeSync"
-WORK = ROOT / "portable_build_standalone_v108"
+WORK = ROOT / "portable_build_standalone_v109"
 DIST = WORK / "dist"
-PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.8.zip"
+PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.9.zip"
 
 
 def main() -> int:
@@ -73,7 +73,7 @@ def main() -> int:
         'the app. Close both eyes for 1 second to toggle voice typing. '
         'Smile for left click; open your mouth for right click. All gestures '
         'work only while the app button says Pause. The app starts paused: '
-        'click Resume to begin. Tilt left to scroll up, right to scroll down; '
+        'click Start to begin. Tilt left to scroll up, right to scroll down; '
         'straighten to stop. Closing the main window exits EyeSync.\n\n'
         'The Command Panel opens an EyeSync on-screen keyboard that can be '
         'moved and resized without administrator permission. Click the text '

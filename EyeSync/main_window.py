@@ -68,6 +68,7 @@ class MainWindow:
         self.engine: threading.Thread | None = None
         self._photo = None
         self._last_frame_id = None
+        self._has_started = False
 
         root.title(TITLE)
         root.resizable(False, False)
@@ -129,7 +130,7 @@ class MainWindow:
 
         buttons = ttk.Frame(r)
         buttons.pack(fill="x", pady=(8, 2), **pad)
-        self.pause_btn = ttk.Button(buttons, text="Pause", style="Big.TButton",
+        self.pause_btn = ttk.Button(buttons, text="Start", style="Big.TButton",
                                     command=lambda: self._do("pause"))
         self.recenter_btn = ttk.Button(buttons, text="Recenter", style="Big.TButton",
                                        command=lambda: self._do("recenter"))
@@ -242,6 +243,8 @@ class MainWindow:
 
     def _do(self, name: str) -> None:
         if self.actions is not None:
+            if name == "pause":
+                self._has_started = True
             getattr(self.actions, name)()
 
     def _stop_voice(self) -> None:
@@ -281,7 +284,10 @@ class MainWindow:
             self.status_var.set(text)
             self.dot.itemconfigure(self.dot_id, fill=COLORS[key])
             self.hint_var.set(snap.hint)
-            self.pause_btn.configure(text="Resume" if snap.paused else "Pause")
+            if not snap.paused:
+                self._has_started = True
+            self.pause_btn.configure(text=("Resume" if self._has_started else "Start")
+                                     if snap.paused else "Pause")
             import app_paths
             calibrated = (app_paths.DATA_DIR / "gaze_model.joblib").is_file()
             self.calib_var.set("Pointer calibrated for this computer. Press Calibrate to "
