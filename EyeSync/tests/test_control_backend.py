@@ -82,7 +82,7 @@ class ControlBackendTests(unittest.TestCase):
             self.assertTrue(requests.empty())
             worker.blink.closed_since = 4.0
             li.VisionWorker._voice_gesture(
-                worker, True, SimpleNamespace(voice="listening", paused=False), 5.01)
+                worker, True, SimpleNamespace(voice="listening", paused=False), 5.51)
             self.assertEqual(requests.get_nowait(), (False, "eyes closed"))
             self.assertEqual(beep.call_args_list, [call(True), call(False)])
 

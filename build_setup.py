@@ -8,9 +8,9 @@ from pathlib import Path
 from PyInstaller.__main__ import run
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "1.0.7"
+VERSION = "1.0.8"
 PAYLOAD = ROOT / f"EyeSync-Standalone-Windows-v{VERSION}.zip"
-WORK = ROOT / "setup_build_standalone_v107"
+WORK = ROOT / "setup_build_standalone_v108"
 OUTPUT = ROOT / f"EyeSync-Setup-v{VERSION}.exe"
 
 

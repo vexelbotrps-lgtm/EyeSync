@@ -320,8 +320,7 @@ def status_of(snap: Snapshot, args) -> tuple[str, str]:
         return "off", "Starting the camera..."
     if not snap.face:
         return "noface", "On - can't see your face"
-    how = "blink" if snap.click_mode == "blink" else "hold still"
-    return "active", f"On - move your head, {how} to click"
+    return "active", "On - smile: left click; mouth open: right click"
 
 
 def control_active(snap: Snapshot, args) -> bool:
@@ -2426,6 +2425,10 @@ class VisionWorker(threading.Thread):
                 self._publish_calibration(now)
             self.blink.reset()
             self.control_backend.reset()
+            self.scroll.update(None, now)
+            self.tilt_held = False
+            if hasattr(self, "voice_eye_hold"):
+                self.voice_eye_hold.reset()
             self.last_mar = None
             self.last_gaze = None
             if (self.gesture_since is not None
@@ -2606,15 +2609,36 @@ class VisionWorker(threading.Thread):
         if resting and self.motion.moving and before is not None:
             self._gaze_jump(before, target, snap, active, now)
 
+    def _desktop_scroll(self, landmarks, width, height, snap, now) -> bool:
+        enabled = snap.gestures and control_active(snap, self.args)
+        wheel = self.scroll.update(
+            fe.head_roll(landmarks, width, height) if enabled else None, now)
+        self.tilt_held = self.scroll.tilted
+        if not self.tilt_held:
+            return False
+        if wheel:
+            self.state.add_scroll(wheel)
+        self.control_backend.reset()
+        self.blink.reset()
+        self.voice_closure = None
+        if hasattr(self, "voice_eye_hold"):
+            self.voice_eye_hold.reset()
+        self.state.update(face=True, eyes_closed=False)
+        return True
+
     def _process_desktop_controls(self, landmarks, mesh, width, height, snap, now) -> None:
         """Desktop project's gaze, smile left click and mouth-open right click.
 
         Keep the website project's blink recognizer solely for its long-eye-close
         voice typing switch. Its blink clicks and head pointer are not used.
         """
+        if self._desktop_scroll(landmarks, width, height, snap, now):
+            return
         if snap.paused:
             self.blink.reset()
             self.voice_closure = None
+            if hasattr(self, "voice_eye_hold"):
+                self.voice_eye_hold.reset()
             closed = False
         else:
             pose = mesh.last_pose
@@ -2622,11 +2646,12 @@ class VisionWorker(threading.Thread):
             scores = mesh.last_blendshapes
             blink_scores = None if scores is None else (
                 scores.get("eyeBlinkLeft", 0.0), scores.get("eyeBlinkRight", 0.0))
-            nose, face_px = fe.nose_pointer(landmarks, width, height)
-            closed, _old_click, _just_closed = self.blink.update(
-                left, right, now, blink_scores,
-                fe.eyes_level_ratio(landmarks, width, height) > 0.7,
-                pose, nose / face_px)
+            from control_backend.eye_hold import EyeHold
+            if not hasattr(self, "voice_eye_hold"):
+                self.voice_eye_hold = EyeHold()
+            closed = self.voice_eye_hold.update(left, right, blink_scores, now)
+            self.blink.closed_since = self.voice_eye_hold.closed_since
+            self.blink.deep = self.voice_eye_hold.deep
             self._voice_gesture(closed, snap, now)
         active = control_active(snap, self.args)
         target, click, held = self.control_backend.update(
@@ -3659,6 +3684,7 @@ async def run(args, on_ready=None) -> int:
     click_mode = "blink"  # the only click gestures are smile and mouth-open
     state = SharedState(screen, sensitivity, preview_on=False, click_mode=click_mode,
                         gestures=bool(settings.get("gestures", True)))
+    state.update(paused=True)
     state.update(calibrated="Saved desktop gaze model")
     calibration = settings.get("calibration")
     if isinstance(calibration, dict):
@@ -3743,6 +3769,8 @@ async def run(args, on_ready=None) -> int:
     finally:
         state.stop.set()
         hotkeys.stop()
+        if panel_process is not None and panel_process.poll() is None:
+            panel_process.terminate()
         await asyncio.gather(vision, *tasks, asyncio.to_thread(voice.close),
                              return_exceptions=True)
     return code

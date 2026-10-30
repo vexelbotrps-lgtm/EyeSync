@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "1.0.7"
+VERSION = "1.0.8"
 OUTPUT = ROOT / f"EyeSync-Developer-Source-v{VERSION}.zip"
 PREFIX = Path(f"EyeSync-Developer-Source-v{VERSION}")
 TOP_LEVEL = {
@@ -18,7 +18,7 @@ MODELS = (
     "face_landmarker.task", "ggml-small.en-q8_0.bin", "ggml-silero-v6.2.0.bin",
     "eyesync-icon.png", "eyesync.ico",
 )
-INSTRUCTIONS = """EyeSync developer source, version 1.0.7
+INSTRUCTIONS = """EyeSync developer source, version 1.0.8
 
 This ZIP includes application source and the three runtime model files. It
 does not include a personal gaze calibration or a Python environment.

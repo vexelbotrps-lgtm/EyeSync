@@ -71,11 +71,11 @@ class MainWindow:
 
         root.title(TITLE)
         root.resizable(False, False)
-        root.protocol("WM_DELETE_WINDOW", self.root.iconify)    # X = minimise
+        root.protocol("WM_DELETE_WINDOW", self._close)
         try:
-            from PIL import ImageTk
-            self._icon = ImageTk.PhotoImage(icon_image())
-            root.iconphoto(True, self._icon)
+            from window_identity import apply_icon, set_process_identity
+            set_process_identity()
+            self._icon = apply_icon(root)
         except Exception:                                      # noqa: BLE001 - cosmetic
             pass
         self._build()
@@ -186,22 +186,10 @@ class MainWindow:
                        "Both eyes closed for 1 s toggles offline voice typing "
                        "with a beep. The voice bar's Stop button also works. "
                        "Gestures work only while this button says Pause. "
+                       "Tilt left to scroll up, right to scroll down; straighten to stop. "
                        "The EyeSync Command Panel accepts on-screen keyboard commands.").pack(
                            anchor="w", pady=(0, 8), **pad)
 
-        bottom = ttk.Frame(r)
-        bottom.pack(fill="x", pady=(0, 6), **pad)
-        ttk.Button(bottom, text="Help", command=lambda: _open(self.help_path)).pack(side="left")
-        ttk.Button(bottom, text="Open log", command=lambda: _open(self.log_path)).pack(
-            side="left", padx=6)
-        # For testing EyeSync on a new face: a guided test, saved as numbers only.
-        self.blink_test_btn = ttk.Button(bottom, text="Blink test",
-                                         command=lambda: self._do("blink_test"))
-        self.blink_test_btn.pack(side="left")
-        ttk.Button(bottom, text="Quit EyeSync", command=lambda: self._do("quit")).pack(
-            side="right")
-        ttk.Label(r, text="Closing this window keeps EyeSync ready (in the taskbar).",
-                  foreground="#777777").pack(anchor="w", pady=(0, 8), **pad)
         self._set_controls_enabled(False)
 
     # -- engine binding -----------------------------------------------------
@@ -215,8 +203,7 @@ class MainWindow:
         self._show_key()
 
     def _set_controls_enabled(self, on: bool) -> None:
-        for b in (self.pause_btn, self.recenter_btn, self.calibrate_btn,
-                  self.blink_test_btn):
+        for b in (self.pause_btn, self.recenter_btn, self.calibrate_btn):
             b.state(["!disabled"] if on else ["disabled"])
         has_key = on and getattr(self.actions, "api_key", None) is not None
         for b in (self.copy_key_btn, self.new_key_btn):
@@ -247,6 +234,11 @@ class MainWindow:
                 default="no", parent=self.root):
             self.actions.new_api_key()
             self._show_key()
+
+    def _close(self) -> None:
+        if self.actions is not None:
+            self.actions.quit()
+        self.root.destroy()
 
     def _do(self, name: str) -> None:
         if self.actions is not None:
@@ -297,7 +289,6 @@ class MainWindow:
                                "Press Calibrate to train the pointer for your face and screen.")
             self.overlay.update(snap)
             self.voice_bar.update(snap)
-            self.blink_test_btn.state(["disabled"] if snap.blink_test else ["!disabled"])
             if self.click_var.get() != snap.click_mode:
                 self.click_var.set(snap.click_mode)
             # Only render the camera while it can be seen (saves CPU).
@@ -588,6 +579,8 @@ def run_with_window(args, engine_main) -> int:
     import face_engine as fe
 
     fe.get_screen_size()         # opt into DPI awareness BEFORE Tk measures anything,
+    from window_identity import set_process_identity
+    set_process_identity()
     root = tk.Tk()                # or text is clipped on scaled (125%+) displays
     win = MainWindow(root, getattr(args, "minimized", False),
                      app_paths.APP_DIR / "README.md", Path(args.log_path))

@@ -24,10 +24,11 @@ class WisprCommandPanel:
         self.pending_after: str | None = None
         self.connected = True
         self.keyboard = AccessibleKeyboard(root, lambda message: self.status_text.set(message))
-        self._app_icon = self.create_app_icon()
+        from window_identity import apply_icon, set_process_identity
+        set_process_identity()
+        self._app_icon = apply_icon(root)
 
         root.title("EyeSync Command Panel")
-        root.iconphoto(True, self._app_icon)
         root.protocol("WM_DELETE_WINDOW", self.close)
 
         frame = ttk.Frame(root, padding=16)
@@ -242,6 +243,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--parent-pid", type=int, default=0)
     args = parser.parse_args()
+    from window_identity import set_process_identity
+    set_process_identity()
     root = tk.Tk()
     WisprCommandPanel(root, args.parent_pid)
     root.mainloop()

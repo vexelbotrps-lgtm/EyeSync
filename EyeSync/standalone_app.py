@@ -8,6 +8,8 @@ os.environ["EYESYNC_STANDALONE"] = "1"
 
 
 def main() -> int:
+    from window_identity import set_process_identity
+    set_process_identity()
     first, rest = (sys.argv[1], sys.argv[2:]) if len(sys.argv) > 1 else ("", [])
     if first == "--calibrate-portable":
         from control_backend.calibrate import main as calibrate
