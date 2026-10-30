@@ -25,11 +25,13 @@ shows nine dots, saves your new model, then restarts. The older **Calibrate eyes
 button was for the original gaze-jump feature and has been removed.
 
 For a downloadable Windows package, use
-`EyeSync-Standalone-Windows-v1.0.4.zip` in this folder. Upload that ZIP as a GitHub
-Release download. Users extract the whole ZIP and double-click
-`EyeSync-Standalone\Start EyeSync.bat`; no Python installation is needed. The first run
-guides them through the nine-dot pointer calibration. Rebuild the package with
-`.venv\Scripts\python.exe build_portable.py` after moving the previous ZIP.
+`EyeSync-Setup-v1.0.5.exe` in this folder. Users open it once to install an
+EyeSync Standalone desktop shortcut, then click that shortcut to calibrate on
+first launch and start the app. No Python installation is needed. The portable
+`EyeSync-Standalone-Windows-v1.0.5.zip` remains available for manual extraction.
+Rebuild with `.venv\Scripts\python.exe build_portable.py`, then
+`.venv\Scripts\python.exe build_setup.py`. The developer package is made with
+`.venv\Scripts\python.exe build_developer_source.py` after committing the source.
 
 The standalone build uses a separate executable and window title, process lock,
 local WebSocket ports 8773/8774 and personal files beside its executable. It

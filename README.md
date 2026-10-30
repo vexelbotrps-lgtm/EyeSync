@@ -1,10 +1,18 @@
 # EyeSync
 
 EyeSync Standalone is a Windows face-controlled pointer with offline voice typing. Download
-the **EyeSync-Standalone-Windows-v1.0.4.zip** asset from this repository's
-[Releases](https://github.com/vexelbotrps-lgtm/EyeSync/releases), extract the
-whole ZIP, and double-click **Start EyeSync.bat**. The first run guides you
-through nine calibration dots. Python is not needed to use the ZIP.
+**EyeSync-Setup-v1.0.5.exe** from this repository's
+[Releases](https://github.com/vexelbotrps-lgtm/EyeSync/releases) and open it.
+Setup installs the application in your user folder and creates an EyeSync Standalone
+shortcut on the Desktop, or in a folder you choose. Click the shortcut to run the
+nine-dot calibration on first launch and open the app. Python is bundled.
+
+For a portable copy, download **EyeSync-Standalone-Windows-v1.0.5.zip**, extract the
+whole ZIP, and run **Start EyeSync.bat**. The source is open under the [MIT License](LICENSE).
+The app's third-party components have their own notices in
+[THIRD_PARTY_NOTICES.md](EyeSync/THIRD_PARTY_NOTICES.md).
+Developers can download **EyeSync-Developer-Source-v1.0.5.zip**, which includes
+the application source, runtime models, and setup instructions.
 
 Smile to left click, open your mouth to right click, and close both eyes for
 one second to toggle voice typing. Gestures work while the application button

@@ -7,6 +7,10 @@ portable_build_standalone/
 portable_build_standalone_v102/
 portable_build_standalone_v103/
 portable_build_standalone_v104/
+portable_build_standalone_v105/
+setup_build_standalone_v105/
+EyeSync-Setup-v*.exe
+EyeSync-Developer-Source-v*.zip
 EyeSync-Standalone-Windows*.zip
 EyeSync-Portable-Windows/
 EyeSync-Portable-Windows*.zip
