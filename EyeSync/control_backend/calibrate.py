@@ -164,12 +164,13 @@ def main(argv=None) -> int:
     messagebox.showinfo("EyeSync calibration", "Calibration saved. EyeSync is ready.")
     if args.restart:
         if app_paths.FROZEN:
-            command = [sys.executable, "--portable"]
+            command = [sys.executable, "--standalone" if app_paths.STANDALONE
+                       else "--portable"]
         else:
             command = [sys.executable, str(ROOT / "live_inference.py"),
                        "--always-active", "--mouse", "software", "--stall-timeout", "45",
                        "--site-origin", "http://localhost:8000",
-                       "--site-origin", "https://aniruddh9140.github.io"]
+                       "--site-origin", "https://vexelbotrps-lgtm.github.io"]
         subprocess.Popen(command, cwd=str(app_paths.DATA_DIR))
     return 0
 

@@ -31,10 +31,11 @@ from pathlib import Path
 from tkinter import ttk
 
 import gaze_engine
+import app_paths
 
 log = logging.getLogger("eyesync")
 
-TITLE = "EyeSync"
+TITLE = "EyeSync Standalone" if app_paths.STANDALONE else "EyeSync"
 PREVIEW_W, PREVIEW_H = 320, 240
 COLORS = {                       # status dot colours (also the window icon)
     "off": "#969696",
@@ -167,10 +168,12 @@ class MainWindow:
         ttk.Checkbutton(settings, text="Face gestures (see below)", variable=self.gestures_var,
                         command=self._set_gestures).grid(
             row=4, column=0, columnspan=2, sticky="w", padx=8, pady=(2, 2))
-        self.autostart_var = tk.BooleanVar(value=_autostart_enabled())
-        ttk.Checkbutton(settings, text="Start with Windows (opens with the website dashboard)",
-                        variable=self.autostart_var, command=self._set_autostart).grid(
-            row=6, column=0, columnspan=2, sticky="w", padx=8, pady=(2, 4))
+        self.autostart_var = tk.BooleanVar(value=False if app_paths.STANDALONE
+                                           else _autostart_enabled())
+        if not app_paths.STANDALONE:
+            ttk.Checkbutton(settings, text="Start with Windows (opens with the website dashboard)",
+                            variable=self.autostart_var, command=self._set_autostart).grid(
+                row=6, column=0, columnspan=2, sticky="w", padx=8, pady=(2, 4))
 
         ttk.Label(settings, text="API key").grid(row=7, column=0, sticky="w", padx=8,
                                                  pady=(2, 8))

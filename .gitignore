@@ -3,6 +3,9 @@ __pycache__/
 .venv/
 portable_build/
 portable_build_public/
+portable_build_standalone/
+EyeSync-Standalone-Windows*.zip
+EyeSync-Portable-Windows/
 EyeSync-Portable-Windows*.zip
 EyeSync/control_backend/*.joblib
 EyeSync/control_backend/*profile*.json

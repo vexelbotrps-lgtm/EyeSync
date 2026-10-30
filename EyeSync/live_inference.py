@@ -3319,6 +3319,7 @@ def status_message(state: SharedState, args) -> dict:
     """What the dashboard shows about EyeSync (sent after every command)."""
     snap = state.read()
     return {"type": "status", "version": VERSION,
+            "edition": "standalone" if app_paths.STANDALONE else "original",
             "mouse_enabled": not snap.remote_off, "paused": snap.paused,
             "active": control_active(snap, args), "face": snap.face,
             "camera": snap.has_position and time.monotonic() - state.last_frame < 3.0,
@@ -3675,7 +3676,8 @@ async def run(args, on_ready=None) -> int:
     desktop.keep_running_in_background()
     api_key = ApiKey(API_KEY_PATH)
     actions = Actions(state, api_key)
-    hotkeys = desktop.GlobalHotkeys(make_hotkey_actions(actions))
+    hotkeys = desktop.GlobalHotkeys(
+        {} if app_paths.STANDALONE else make_hotkey_actions(actions))
     hotkeys.start()
     if hotkeys.registered:
         log.info("[hotkeys] Active: " + ", ".join(desktop.HOTKEY_PREFIX + k
@@ -3848,7 +3850,8 @@ class Actions:
             self.api_key.regenerate()
 
     def show_window(self) -> None:
-        desktop.bring_window_to_front("EyeSync", "TkTopLevel")
+        desktop.bring_window_to_front(
+            "EyeSync Standalone" if app_paths.STANDALONE else "EyeSync", "TkTopLevel")
 
     def quit(self) -> None:
         log.info("[control] Quit requested")
@@ -3907,7 +3910,7 @@ def parse_args():
     g = p.add_argument_group("web dashboard")
     g.add_argument("--ws-host", default="localhost",
                    help="'localhost' binds both 127.0.0.1 and ::1 (default)")
-    g.add_argument("--ws-ports", type=int, nargs="+", default=[8080, 8765],
+    g.add_argument("--ws-ports", type=int, nargs="+", default=list(site_access.DEFAULT_PORTS),
                    help="WebSocket ports (default: 8080 for the website, 8765)")
     g.add_argument("--dashboard-size", default="800x600",
                    help="coordinate space for WebSocket x/y: WxH or 'native' (default 800x600, "
@@ -3998,11 +4001,14 @@ def main() -> int:
         return 2
     if not args.site_origin:
         args.site_origin = list(DEFAULT_SITE_ORIGINS)
-    if not desktop.acquire_single_instance("EyeSync.LiveInference"):
+    instance_name = ("EyeSync.Standalone.LiveInference" if app_paths.STANDALONE
+                     else "EyeSync.LiveInference")
+    if not desktop.acquire_single_instance(instance_name):
         # Already running (e.g. started with Windows): show its window
         # instead, and exit cleanly (code 0) so launchers don't retry.
         log.info("[main] EyeSync is already running - bringing its window to the front")
-        desktop.bring_window_to_front("EyeSync", "TkTopLevel")
+        desktop.bring_window_to_front(
+            "EyeSync Standalone" if app_paths.STANDALONE else "EyeSync", "TkTopLevel")
         return 0
     log.info(f"=== EyeSync {VERSION} live session starting ===")
     if not args.always_active:

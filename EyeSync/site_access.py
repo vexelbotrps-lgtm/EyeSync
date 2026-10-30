@@ -33,11 +33,12 @@ import app_paths
 
 log = logging.getLogger("eyesync")
 
-VERSION = "1.5.14"        # shown in the log and to the website; names the release files
+VERSION = app_paths.STANDALONE_VERSION if app_paths.STANDALONE else "1.5.14"
 PROJECT_DIR = app_paths.DATA_DIR    # the user's files (see app_paths)
 # The EyeSync website (GitHub Pages since 2026-10-14; it replaced the Wix site).
-DEFAULT_SITE_ORIGINS = ["https://aniruddh9140.github.io"]
-DEFAULT_PORTS = (8080, 8765)
+DEFAULT_SITE_ORIGINS = (["https://vexelbotrps-lgtm.github.io"] if app_paths.STANDALONE
+                        else ["https://aniruddh9140.github.io"])
+DEFAULT_PORTS = (8773, 8774) if app_paths.STANDALONE else (8080, 8765)
 API_KEY_PATH = PROJECT_DIR / "eyesync_api_key.txt"
 
 

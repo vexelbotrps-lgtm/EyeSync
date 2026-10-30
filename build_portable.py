@@ -1,7 +1,7 @@
 """Build a Windows ZIP that runs without Python or an installer.
 
 Run from this folder with .venv\\Scripts\\python.exe build_portable.py.
-The output is EyeSync-Portable-Windows-PUBLIC.zip in this folder.
+The output is EyeSync-Standalone-Windows-v1.0.1.zip in this folder.
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "EyeSync"
-WORK = ROOT / "portable_build_public"
+WORK = ROOT / "portable_build_standalone"
 DIST = WORK / "dist"
-PACKAGE = ROOT / "EyeSync-Portable-Windows-PUBLIC.zip"
+PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.1.zip"
 
 
 def main() -> int:
@@ -25,7 +25,7 @@ def main() -> int:
     from PyInstaller.__main__ import run
 
     options = [
-        str(SOURCE / "eyesync_app.py"), "--name", "EyeSync", "--onedir",
+        str(SOURCE / "standalone_app.py"), "--name", "EyeSync-Standalone", "--onedir",
         "--windowed", "--clean", "--noconfirm", "--noupx",
         "--distpath", str(DIST), "--workpath", str(WORK / "work"),
         "--specpath", str(WORK),
@@ -49,18 +49,18 @@ def main() -> int:
                 f"{os.pathsep}control_backend"]
     run(options)
 
-    app = DIST / "EyeSync"
+    app = DIST / "EyeSync-Standalone"
     (app / "Start EyeSync.bat").write_text(
         '@echo off\r\ncd /d "%~dp0"\r\n'
         'if not exist "gaze_model.joblib" (\r\n'
-        '  "EyeSync.exe" --calibrate-portable\r\n'
+        '  "EyeSync-Standalone.exe" --calibrate-portable\r\n'
         '  if errorlevel 1 exit /b 1\r\n'
-        ')\r\nstart "" "%~dp0EyeSync.exe" --portable\r\n', encoding="utf-8")
+        ')\r\nstart "" "%~dp0EyeSync-Standalone.exe" --standalone\r\n', encoding="utf-8")
     (app / "Calibrate Gaze.bat").write_text(
         '@echo off\r\ncd /d "%~dp0"\r\n'
-        '"EyeSync.exe" --calibrate-portable\r\n'
+        '"EyeSync-Standalone.exe" --calibrate-portable\r\n'
         'if errorlevel 1 exit /b 1\r\n'
-        'start "" "%~dp0EyeSync.exe" --portable\r\n', encoding="utf-8")
+        'start "" "%~dp0EyeSync-Standalone.exe" --standalone\r\n', encoding="utf-8")
     (app / "README.txt").write_text(
         'EyeSync for Windows 10/11, 64-bit.\n\n'
         'Extract the whole ZIP, then double-click Start EyeSync.bat. '
@@ -71,13 +71,16 @@ def main() -> int:
         'the app. Close both eyes for 1 second to toggle voice typing. '
         'Smile for left click; open your mouth for right click. All gestures '
         'work only while the app button says Pause.\n\n'
-        'Keep the _internal folder beside EyeSync.exe. Personal settings and '
-        'the gaze model are stored beside EyeSync.exe.\n', encoding="utf-8")
+        'This standalone edition uses its own window, process lock and local '
+        'WebSocket ports (8773 and 8774). It does not install or update the '
+        'original EyeSync application.\n\n'
+        'Keep the _internal folder beside EyeSync-Standalone.exe. Personal '
+        'settings and the gaze model stay beside the executable.\n', encoding="utf-8")
     with zipfile.ZipFile(PACKAGE, "w", compression=zipfile.ZIP_DEFLATED,
                          compresslevel=6) as archive:
         for path in sorted(app.rglob("*")):
             if path.is_file():
-                archive.write(path, Path("EyeSync") / path.relative_to(app))
+                archive.write(path, Path("EyeSync-Standalone") / path.relative_to(app))
     print(PACKAGE)
     print(f"ZIP size: {PACKAGE.stat().st_size / 1024**2:.1f} MiB")
     return 0
