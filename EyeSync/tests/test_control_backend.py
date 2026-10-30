@@ -3,9 +3,10 @@ import sys
 import unittest
 import queue
 import threading
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 import numpy as np
 
@@ -134,6 +135,20 @@ class ControlBackendTests(unittest.TestCase):
         self.assertEqual(voice_commands.wispr_command_action(
             "Open the on-screen keyboard"), "open_keyboard")
         self.assertIsNone(voice_commands.wispr_command_action("delete every file"))
+
+    def test_onscreen_keyboard_launch_does_not_request_admin(self):
+        with tempfile.TemporaryDirectory() as folder:
+            keyboard = Path(folder) / "System32" / "osk.exe"
+            keyboard.parent.mkdir()
+            keyboard.touch()
+            execute = Mock(return_value=33)
+            with patch.object(voice_commands, "_require_windows"), patch.object(
+                    voice_commands, "_get_osk_window", return_value=0), patch.dict(
+                    voice_commands.os.environ, {"WINDIR": folder}), patch.object(
+                    voice_commands.ctypes, "WinDLL",
+                    return_value=SimpleNamespace(ShellExecuteW=execute)):
+                self.assertTrue(voice_commands.open_onscreen_keyboard())
+            self.assertEqual(execute.call_args.args[1], "open")
 
 
 if __name__ == "__main__":

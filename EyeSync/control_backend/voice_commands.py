@@ -157,8 +157,10 @@ def open_onscreen_keyboard() -> bool:
         wintypes.LPCWSTR, ctypes.c_int,
     )
     shell32.ShellExecuteW.restype = ctypes.c_void_p
+    # "runas" opens a UAC secure-desktop prompt, where a normal EyeSync
+    # process cannot move the cursor or click. OSK needs no elevation.
     result = shell32.ShellExecuteW(
-        None, "runas", str(keyboard), None, None, _SW_SHOWNORMAL
+        None, "open", str(keyboard), None, None, _SW_SHOWNORMAL
     )
     if result is None or result <= 32:
         raise OSError(

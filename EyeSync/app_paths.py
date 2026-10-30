@@ -24,7 +24,7 @@ from pathlib import Path
 
 FROZEN = bool(getattr(sys, "frozen", False))
 STANDALONE = os.environ.get("EYESYNC_STANDALONE") == "1"
-STANDALONE_VERSION = "1.0.2"
+STANDALONE_VERSION = "1.0.3"
 SOURCE_DIR = Path(__file__).resolve().parent
 APP_DIR = Path(getattr(sys, "_MEIPASS", SOURCE_DIR)) if FROZEN else SOURCE_DIR
 DATA_DIR = Path(sys.executable).resolve().parent if FROZEN else SOURCE_DIR
