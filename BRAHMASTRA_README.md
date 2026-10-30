@@ -25,7 +25,7 @@ shows nine dots, saves your new model, then restarts. The older **Calibrate eyes
 button was for the original gaze-jump feature and has been removed.
 
 For a downloadable Windows package, use
-`EyeSync-Standalone-Windows-v1.0.3.zip` in this folder. Upload that ZIP as a GitHub
+`EyeSync-Standalone-Windows-v1.0.4.zip` in this folder. Upload that ZIP as a GitHub
 Release download. Users extract the whole ZIP and double-click
 `EyeSync-Standalone\Start EyeSync.bat`; no Python installation is needed. The first run
 guides them through the nine-dot pointer calibration. Rebuild the package with

@@ -3,7 +3,6 @@ import sys
 import unittest
 import queue
 import threading
-import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
@@ -13,6 +12,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from control_backend.adapter import ControlBackend  # noqa: E402
 from control_backend import voice_commands  # noqa: E402
+from control_backend.accessible_keyboard import AccessibleKeyboard  # noqa: E402
+from control_backend.wispr_command_panel import WisprCommandPanel  # noqa: E402
 import live_inference as li  # noqa: E402
 import voice_typing as vt  # noqa: E402
 
@@ -136,19 +137,31 @@ class ControlBackendTests(unittest.TestCase):
             "Open the on-screen keyboard"), "open_keyboard")
         self.assertIsNone(voice_commands.wispr_command_action("delete every file"))
 
-    def test_onscreen_keyboard_launch_does_not_request_admin(self):
-        with tempfile.TemporaryDirectory() as folder:
-            keyboard = Path(folder) / "System32" / "osk.exe"
-            keyboard.parent.mkdir()
-            keyboard.touch()
-            execute = Mock(return_value=33)
-            with patch.object(voice_commands, "_require_windows"), patch.object(
-                    voice_commands, "_get_osk_window", return_value=0), patch.dict(
-                    voice_commands.os.environ, {"WINDIR": folder}), patch.object(
-                    voice_commands.ctypes, "WinDLL",
-                    return_value=SimpleNamespace(ShellExecuteW=execute)):
-                self.assertTrue(voice_commands.open_onscreen_keyboard())
-            self.assertEqual(execute.call_args.args[1], "open")
+    def test_keyboard_commands_control_eyesync_window(self):
+        panel = WisprCommandPanel.__new__(WisprCommandPanel)
+        panel.keyboard = Mock()
+        self.assertIn("opened", panel._run_command("open_keyboard"))
+        panel.keyboard.open.assert_called_once()
+        self.assertIn("size changed", panel._run_command("increase_keyboard"))
+        panel.keyboard.resize.assert_called_once_with(1.15)
+        self.assertIn("Moving", panel._run_command("start_adjusting"))
+        panel.keyboard.start_moving.assert_called_once()
+        self.assertIn("closed", panel._run_command("close_keyboard"))
+        panel.keyboard.close.assert_called_once()
+
+    def test_keyboard_shift_and_edit_key(self):
+        keyboard = AccessibleKeyboard.__new__(AccessibleKeyboard)
+        keyboard.shift = True
+        keyboard.caps = False
+        with patch.object(keyboard, "_focus_target", return_value=True), patch.object(
+                voice_commands, "type_text") as type_text, patch.object(
+                voice_commands, "press_virtual_key") as press_key:
+            keyboard._type("a")
+            keyboard._toggle_shift()
+            keyboard._type("1")
+            keyboard._key(0x08)
+        self.assertEqual(type_text.call_args_list, [call("A"), call("!")])
+        press_key.assert_called_once_with(0x08)
 
 
 if __name__ == "__main__":

@@ -1,9 +1,8 @@
-"""Offline Windows speech commands, OSK controls, and Unicode text entry."""
+"""Offline speech commands and Unicode keyboard input for Windows."""
 from __future__ import annotations
 
 import ctypes
 import logging
-import os
 import re
 import sys
 from ctypes import wintypes
@@ -15,11 +14,6 @@ log = logging.getLogger("gaze.voice")
 import app_paths
 
 _SCRIPT_PATH = app_paths.APP_DIR / "control_backend" / "voice_commands.ps1"
-_PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-_WM_CLOSE = 0x0010
-_SWP_NOZORDER = 0x0004
-_SWP_NOACTIVATE = 0x0010
-_SW_SHOWNORMAL = 1
 _VK_TAB = 0x09
 _KEYEVENTF_KEYUP = 0x0002
 _NUMBER_WORDS = {
@@ -80,179 +74,6 @@ def speech_script_path() -> Path:
 def _require_windows() -> None:
     if sys.platform != "win32":
         raise OSError("Voice commands and the on-screen keyboard require Windows.")
-
-
-def _get_osk_window() -> int:
-    _require_windows()
-    user32 = ctypes.WinDLL("user32", use_last_error=True)
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    user32.EnumWindows.argtypes = (
-        ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM),
-        wintypes.LPARAM,
-    )
-    user32.EnumWindows.restype = wintypes.BOOL
-    user32.GetWindowThreadProcessId.argtypes = (
-        wintypes.HWND, ctypes.POINTER(wintypes.DWORD)
-    )
-    kernel32.OpenProcess.argtypes = (
-        wintypes.DWORD, wintypes.BOOL, wintypes.DWORD
-    )
-    kernel32.OpenProcess.restype = wintypes.HANDLE
-    kernel32.QueryFullProcessImageNameW.argtypes = (
-        wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
-        ctypes.POINTER(wintypes.DWORD),
-    )
-    kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
-    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
-
-    found: list[int] = []
-    callback_type = ctypes.WINFUNCTYPE(
-        wintypes.BOOL, wintypes.HWND, wintypes.LPARAM
-    )
-
-    def inspect(hwnd, _parameter):
-        process_id = wintypes.DWORD()
-        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))
-        process = kernel32.OpenProcess(
-            _PROCESS_QUERY_LIMITED_INFORMATION, False, process_id.value
-        )
-        if not process:
-            return True
-        try:
-            image_path = ctypes.create_unicode_buffer(32768)
-            length = wintypes.DWORD(len(image_path))
-            if (kernel32.QueryFullProcessImageNameW(
-                    process, 0, image_path, ctypes.byref(length))
-                    and Path(image_path.value).name.casefold() == "osk.exe"):
-                found.append(int(hwnd))
-                return False
-        finally:
-            kernel32.CloseHandle(process)
-        return True
-
-    callback = callback_type(inspect)
-    enumerated = user32.EnumWindows(callback, 0)
-    if not enumerated and not found:
-        error = ctypes.get_last_error()
-        if error:
-            raise ctypes.WinError(error)
-    return found[0] if found else 0
-
-
-def open_onscreen_keyboard() -> bool:
-    _require_windows()
-    if _get_osk_window():
-        return True
-    windows_dir = os.environ.get("WINDIR")
-    if not windows_dir:
-        raise OSError("Cannot open the on-screen keyboard: WINDIR is not set.")
-    keyboard = Path(windows_dir) / "System32" / "osk.exe"
-    if not keyboard.is_file():
-        raise FileNotFoundError(
-            f"Windows on-screen keyboard was not found at {keyboard}."
-        )
-    shell32 = ctypes.WinDLL("shell32", use_last_error=True)
-    shell32.ShellExecuteW.argtypes = (
-        wintypes.HWND, wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.LPCWSTR,
-        wintypes.LPCWSTR, ctypes.c_int,
-    )
-    shell32.ShellExecuteW.restype = ctypes.c_void_p
-    # "runas" opens a UAC secure-desktop prompt, where a normal EyeSync
-    # process cannot move the cursor or click. OSK needs no elevation.
-    result = shell32.ShellExecuteW(
-        None, "open", str(keyboard), None, None, _SW_SHOWNORMAL
-    )
-    if result is None or result <= 32:
-        raise OSError(
-            "Windows could not start the on-screen keyboard "
-            f"(ShellExecute error {result})."
-        )
-    return True
-
-
-def close_onscreen_keyboard() -> bool:
-    hwnd = _get_osk_window()
-    if not hwnd:
-        return False
-    user32 = ctypes.WinDLL("user32", use_last_error=True)
-    user32.PostMessageW.argtypes = (
-        wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM
-    )
-    user32.PostMessageW.restype = wintypes.BOOL
-    if not user32.PostMessageW(hwnd, _WM_CLOSE, 0, 0):
-        error = ctypes.get_last_error()
-        raise ctypes.WinError(error) if error else OSError(
-            "Windows did not close the on-screen keyboard."
-        )
-    return True
-
-
-def is_keyboard_titlebar_cursor_position() -> bool:
-    hwnd = _get_osk_window()
-    if not hwnd:
-        return False
-    user32 = ctypes.WinDLL("user32", use_last_error=True)
-    user32.GetWindowRect.argtypes = (
-        wintypes.HWND, ctypes.POINTER(wintypes.RECT)
-    )
-    user32.GetWindowRect.restype = wintypes.BOOL
-    user32.GetCursorPos.argtypes = (ctypes.POINTER(wintypes.POINT),)
-    user32.GetCursorPos.restype = wintypes.BOOL
-
-    rect = wintypes.RECT()
-    point = wintypes.POINT()
-    if not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
-        error = ctypes.get_last_error()
-        raise ctypes.WinError(error) if error else OSError(
-            "Cannot read the on-screen keyboard position."
-        )
-    if not user32.GetCursorPos(ctypes.byref(point)):
-        error = ctypes.get_last_error()
-        raise ctypes.WinError(error) if error else OSError(
-            "Cannot read the pointer position."
-        )
-    titlebar_height = max(32, (rect.bottom - rect.top) // 12)
-    return (
-        rect.left <= point.x <= rect.right
-        and rect.top <= point.y <= rect.top + titlebar_height
-    )
-
-
-def resize_onscreen_keyboard(scale: float) -> bool:
-    if not 0.5 <= scale <= 2.0:
-        raise ValueError("Keyboard resize factor must be between 0.5 and 2.0.")
-    hwnd = _get_osk_window()
-    if not hwnd:
-        return False
-    user32 = ctypes.WinDLL("user32", use_last_error=True)
-    user32.GetWindowRect.argtypes = (
-        wintypes.HWND, ctypes.POINTER(wintypes.RECT)
-    )
-    user32.GetWindowRect.restype = wintypes.BOOL
-    user32.SetWindowPos.argtypes = (
-        wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
-        ctypes.c_int, ctypes.c_int, wintypes.UINT,
-    )
-    user32.SetWindowPos.restype = wintypes.BOOL
-
-    rect = wintypes.RECT()
-    if not user32.GetWindowRect(hwnd, ctypes.byref(rect)):
-        error = ctypes.get_last_error()
-        raise ctypes.WinError(error) if error else OSError(
-            "Cannot read the on-screen keyboard size."
-        )
-    width = int((rect.right - rect.left) * scale)
-    height = int((rect.bottom - rect.top) * scale)
-    width = max(400, min(width, 1800))
-    height = max(200, min(height, 1100))
-    if not user32.SetWindowPos(
-            hwnd, None, rect.left, rect.top, width, height,
-            _SWP_NOZORDER | _SWP_NOACTIVATE):
-        error = ctypes.get_last_error()
-        raise ctypes.WinError(error) if error else OSError(
-            "Windows did not resize the on-screen keyboard."
-        )
-    return True
 
 
 class _KeyboardInput(ctypes.Structure):
@@ -332,6 +153,26 @@ def set_tab_key_down(down: bool) -> None:
         error = ctypes.get_last_error()
         raise ctypes.WinError(error) if error else OSError(
             "Windows did not accept the Tab key event."
+        )
+
+
+def press_virtual_key(code: int) -> None:
+    """Press and release a non-text key in the currently focused window."""
+    _require_windows()
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.SendInput.argtypes = (
+        wintypes.UINT, ctypes.POINTER(_Input), ctypes.c_int
+    )
+    user32.SendInput.restype = wintypes.UINT
+    events = (_Input * 2)()
+    events[0].type = events[1].type = 1
+    events[0].ki.wVk = events[1].ki.wVk = code
+    events[1].ki.dwFlags = _KEYEVENTF_KEYUP
+    sent = user32.SendInput(2, events, ctypes.sizeof(_Input))
+    if sent != 2:
+        error = ctypes.get_last_error()
+        raise ctypes.WinError(error) if error else OSError(
+            f"Windows accepted {sent} of 2 key input events."
         )
 
 

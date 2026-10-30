@@ -8,6 +8,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk
 
+from control_backend.accessible_keyboard import AccessibleKeyboard
 from control_backend import voice_commands as vc
 
 
@@ -22,7 +23,7 @@ class WisprCommandPanel:
         self.stopping = threading.Event()
         self.pending_after: str | None = None
         self.connected = True
-        self.adjusting = False
+        self.keyboard = AccessibleKeyboard(root, lambda message: self.status_text.set(message))
         self._app_icon = self.create_app_icon()
 
         root.title("EyeSync Standalone Command Panel")
@@ -38,7 +39,8 @@ class WisprCommandPanel:
             text=(
                 "EyeSync's offline voice typing stays in the main app. "
                 "Use your speech tool to dictate one of the exact keyboard "
-                "commands into the field below."
+                "commands into the field below. The EyeSync keyboard can be "
+                "moved and resized without Windows administrator permission."
             ),
             wraplength=540,
         ).pack(anchor="w")
@@ -182,40 +184,30 @@ class WisprCommandPanel:
                 phrase = self.commands.get(timeout=0.1)
             except queue.Empty:
                 continue
-            try:
-                action = vc.wispr_command_action(phrase)
-                if action == "open_keyboard":
-                    ok = vc.open_onscreen_keyboard()
-                    message = "On-screen keyboard opened." if ok else "Could not open the keyboard."
-                elif action == "close_keyboard":
-                    self._release_mouse()
-                    ok = vc.close_onscreen_keyboard()
-                    message = "On-screen keyboard closed." if ok else "Keyboard was not open."
-                elif action in ("increase_keyboard", "reduce_keyboard"):
-                    factor = 1.15 if action == "increase_keyboard" else 1 / 1.15
-                    ok = vc.resize_onscreen_keyboard(factor)
-                    message = "Keyboard size changed." if ok else "Open the keyboard first."
-                elif action == "start_adjusting":
-                    if not vc.is_keyboard_titlebar_cursor_position():
-                        message = "Put the pointer on the keyboard title bar, then repeat."
-                    else:
-                        ctypes.windll.user32.mouse_event(0x0002, 0, 0, 0, 0)
-                        self.adjusting = True
-                        message = "Moving keyboard. Say done adjusting to release it."
-                elif action == "stop_adjusting":
-                    self._release_mouse()
-                    message = "Keyboard released."
-                else:
-                    message = "No supported command matched."
-            except OSError as exc:
-                self._release_mouse()
-                message = f"Command failed: {exc}"
-            self.events.put(("result", message))
+            self.events.put(("command", vc.wispr_command_action(phrase) or ""))
 
-    def _release_mouse(self) -> None:
-        if self.adjusting:
-            ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
-            self.adjusting = False
+    def _run_command(self, action: str) -> str:
+        try:
+            if action == "open_keyboard":
+                self.keyboard.open()
+                return "EyeSync keyboard opened. Click the text field you want to type in."
+            if action == "close_keyboard":
+                return ("EyeSync keyboard closed." if self.keyboard.close()
+                        else "Keyboard was not open.")
+            if action in ("increase_keyboard", "reduce_keyboard"):
+                factor = 1.15 if action == "increase_keyboard" else 1 / 1.15
+                return ("Keyboard size changed." if self.keyboard.resize(factor)
+                        else "Open the keyboard first.")
+            if action == "start_adjusting":
+                return ("Moving keyboard. Say done adjusting to stop."
+                        if self.keyboard.start_moving() else "Open the keyboard first.")
+            if action == "stop_adjusting":
+                self.keyboard.stop_moving()
+                return "Keyboard released."
+            return "No supported command matched."
+        except OSError as exc:
+            self.keyboard.stop_moving()
+            return f"Command failed: {exc}"
 
     def poll_events(self) -> None:
         while True:
@@ -235,12 +227,14 @@ class WisprCommandPanel:
                 self.gesture_status.set(message)
             elif kind == "result":
                 self.status_text.set(message)
+            elif kind == "command":
+                self.status_text.set(self._run_command(message))
         if not self.stopping.is_set():
             self.root.after(150, self.poll_events)
 
     def close(self) -> None:
         self.stopping.set()
-        self._release_mouse()
+        self.keyboard.close()
         self.root.destroy()
 
 

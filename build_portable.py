@@ -1,7 +1,7 @@
 """Build a Windows ZIP that runs without Python or an installer.
 
 Run from this folder with .venv\\Scripts\\python.exe build_portable.py.
-The output is EyeSync-Standalone-Windows-v1.0.3.zip in this folder.
+The output is EyeSync-Standalone-Windows-v1.0.4.zip in this folder.
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "EyeSync"
-WORK = ROOT / "portable_build_standalone_v103"
+WORK = ROOT / "portable_build_standalone_v104"
 DIST = WORK / "dist"
-PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.3.zip"
+PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.4.zip"
 
 
 def main() -> int:
@@ -35,6 +35,7 @@ def main() -> int:
         "--hidden-import", "main_window",
         "--hidden-import", "control_backend.calibrate",
         "--hidden-import", "control_backend.wispr_command_panel",
+        "--hidden-import", "control_backend.accessible_keyboard",
         "--hidden-import", "control_backend.voice_commands",
         "--hidden-import", "gaze_core",
         "--collect-all", "mediapipe",
@@ -71,6 +72,9 @@ def main() -> int:
         'the app. Close both eyes for 1 second to toggle voice typing. '
         'Smile for left click; open your mouth for right click. All gestures '
         'work only while the app button says Pause.\n\n'
+        'The Command Panel opens an EyeSync on-screen keyboard that can be '
+        'moved and resized without administrator permission. Click the text '
+        'field you want to use before pressing its keys.\n\n'
         'This standalone edition uses its own window, process lock and local '
         'WebSocket ports (8773 and 8774). It does not install or update the '
         'original EyeSync application.\n\n'
