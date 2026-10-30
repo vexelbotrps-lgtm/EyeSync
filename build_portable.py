@@ -1,7 +1,7 @@
 """Build a Windows ZIP that runs without Python or an installer.
 
 Run from this folder with .venv\\Scripts\\python.exe build_portable.py.
-The output is EyeSync-Standalone-Windows-v1.0.6.zip in this folder.
+The output is EyeSync-Standalone-Windows-v1.0.7.zip in this folder.
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "EyeSync"
-WORK = ROOT / "portable_build_standalone_v106"
+WORK = ROOT / "portable_build_standalone_v107"
 DIST = WORK / "dist"
-PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.6.zip"
+PACKAGE = ROOT / "EyeSync-Standalone-Windows-v1.0.7.zip"
 
 
 def main() -> int:
