@@ -910,7 +910,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.72); }
           <article class="feature">
             <span class="feature-mark" aria-hidden="true"></span>
             <h3>Every setting in reach</h3>
-            <p>Pause, recenter, change the speed or how you click, right from the dashboard. Changes you make on the PC show up here instantly.</p>
+            <p>Pause, recenter, or change how you click right from the dashboard. Changes you make on the PC show up here instantly.</p>
           </article>
           <article class="feature">
             <span class="feature-mark" data-tone="warn" aria-hidden="true"></span>
@@ -1281,17 +1281,6 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.72); }
                 <button class="btn" type="button" id="es-recenter">Recenter cursor</button>
               </div>
               <fieldset class="plain">
-                <legend>Speed</legend>
-                <div class="seg">
-                  <label class="seg-opt"><input type="radio" name="es-speed" value="1" aria-label="Speed 1, calmest"><span aria-hidden="true">1</span></label>
-                  <label class="seg-opt"><input type="radio" name="es-speed" value="2" aria-label="Speed 2"><span aria-hidden="true">2</span></label>
-                  <label class="seg-opt"><input type="radio" name="es-speed" value="3" aria-label="Speed 3"><span aria-hidden="true">3</span></label>
-                  <label class="seg-opt"><input type="radio" name="es-speed" value="4" aria-label="Speed 4"><span aria-hidden="true">4</span></label>
-                  <label class="seg-opt"><input type="radio" name="es-speed" value="5" aria-label="Speed 5, fastest"><span aria-hidden="true">5</span></label>
-                </div>
-                <div class="seg-ends" aria-hidden="true"><span>Calmer</span><span>Faster</span></div>
-              </fieldset>
-              <fieldset class="plain">
                 <legend>Click by</legend>
                 <div class="choice-row">
                   <label class="check"><input type="radio" name="es-click" value="blink"><span>Smile left click / mouth-open right click</span></label>
@@ -1522,7 +1511,7 @@ dialog.modal::backdrop { background: rgba(0, 0, 0, 0.72); }
           </dl>
           <div class="stack-sm" id="dl-verify" hidden>
             <p class="hint">To check the download, run this in PowerShell in your Downloads folder and compare the hash with the SHA-256 above:</p>
-            <code class="cmd" id="dl-hashcmd">Get-FileHash .\EyeSync-Standalone-Windows-v1.0.1.zip</code>
+            <code class="cmd" id="dl-hashcmd">Get-FileHash .\EyeSync-Standalone-Windows-v1.0.2.zip</code>
           </div>
           <dl class="kv">
             <dt>Needs</dt><dd>Windows 10 or 11 and a webcam. A microphone for voice typing (optional)</dd>
@@ -3190,7 +3179,6 @@ function renderEyeSync() {
   const pause = $('#es-pause');
   pause.textContent = s?.paused ? 'Resume' : 'Pause';
   pause.setAttribute('aria-pressed', String(!!s?.paused));
-  $$('input[name="es-speed"]').forEach((i) => { i.checked = Number(i.value) === s?.speed; });
   $$('input[name="es-click"]').forEach((i) => { i.checked = i.value === s?.clickMode; });
   $('#es-gestures').checked = !!s?.gestures;
   const v = on ? s.voice : null;
@@ -4233,7 +4221,6 @@ function bindForms() {
   $('#es-mouse').addEventListener('change', (e) => EyeSync.send('mouse', e.target.checked));
   $('#es-pause').addEventListener('click', () => EyeSync.send('pause', !EyeSync.status?.paused));
   $('#es-recenter').addEventListener('click', () => { if (EyeSync.send('recenter')) toast('Cursor recentred.'); });
-  $$('input[name="es-speed"]').forEach((i) => i.addEventListener('change', () => EyeSync.send('speed', Number(i.value))));
   $$('input[name="es-click"]').forEach((i) => i.addEventListener('change', () => EyeSync.send('click_mode', i.value)));
   $('#es-gestures').addEventListener('change', (e) => EyeSync.send('gestures', e.target.checked));
   // What's said is typed wherever the keyboard focus is. Let go of the switch, so a space typed

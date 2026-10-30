@@ -143,16 +143,6 @@ class MainWindow:
 
         settings = ttk.LabelFrame(r, text="Settings")
         settings.pack(fill="x", pady=8, **pad)
-        ttk.Label(settings, text="Speed").grid(row=0, column=0, sticky="w", padx=8, pady=6)
-        self.sens_var = tk.IntVar(value=2)
-        sens = ttk.Frame(settings)
-        sens.grid(row=0, column=1, sticky="w")
-        ttk.Label(sens, text="calmer").pack(side="left")
-        for n in range(1, 6):
-            ttk.Radiobutton(sens, text=str(n), value=n, variable=self.sens_var,
-                            command=self._set_sensitivity).pack(side="left", padx=2)
-        ttk.Label(sens, text="faster").pack(side="left")
-
         ttk.Label(settings, text="Click by").grid(row=2, column=0, sticky="nw", padx=8, pady=6)
         self.click_var = tk.StringVar(value="blink")
         clk = ttk.Frame(settings)
@@ -215,7 +205,6 @@ class MainWindow:
         """Called (on the Tk thread) once the engine is up."""
         self.state, self.actions, self.status = state, actions, status
         snap = state.read()
-        self.sens_var.set(snap.sensitivity)
         self.click_var.set(snap.click_mode)
         self.gestures_var.set(snap.gestures)
         self._set_controls_enabled(True)
@@ -268,10 +257,6 @@ class MainWindow:
         if self.state is not None and self.state.read().calib_step == "done":
             self.state.update(calib_step="", calib_text="", calib_progress=0.0)
 
-    def _set_sensitivity(self) -> None:
-        if self.actions is not None:
-            self.actions.set_sensitivity(self.sens_var.get())
-
     def _set_gestures(self) -> None:
         if self.actions is not None:
             self.actions.set_gestures(self.gestures_var.get())
@@ -309,8 +294,6 @@ class MainWindow:
             self.overlay.update(snap)
             self.voice_bar.update(snap)
             self.blink_test_btn.state(["disabled"] if snap.blink_test else ["!disabled"])
-            if self.sens_var.get() != snap.sensitivity:        # changed by a hotkey
-                self.sens_var.set(snap.sensitivity)
             if self.click_var.get() != snap.click_mode:
                 self.click_var.set(snap.click_mode)
             # Only render the camera while it can be seen (saves CPU).

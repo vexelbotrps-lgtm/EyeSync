@@ -1,7 +1,7 @@
 # EyeSync
 
 EyeSync Standalone is a Windows face-controlled pointer with offline voice typing. Download
-the **EyeSync-Standalone-Windows-v1.0.1.zip** asset from this repository's
+the **EyeSync-Standalone-Windows-v1.0.2.zip** asset from this repository's
 [Releases](https://github.com/vexelbotrps-lgtm/EyeSync/releases), extract the
 whole ZIP, and double-click **Start EyeSync.bat**. The first run guides you
 through nine calibration dots. Python is not needed to use the ZIP.
